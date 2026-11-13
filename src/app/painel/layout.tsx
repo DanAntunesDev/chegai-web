@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useMe } from '@/components/auth/use-me';
 import { navFor } from '@/components/panel/nav';
+import { TenantStatusGate } from '@/components/panel/tenant-status';
 import { AppShell } from '@/components/shell/app-shell';
 import { Select } from '@/components/ui/select';
 
@@ -43,7 +44,7 @@ function PanelShell({ children }: { children: ReactNode }) {
       area="Barbearia"
       headerExtra={<TenantSwitcher />}
     >
-      {children}
+      <TenantStatusGate>{children}</TenantStatusGate>
     </AppShell>
   );
 }
