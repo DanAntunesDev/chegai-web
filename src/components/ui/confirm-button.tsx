@@ -25,7 +25,13 @@ export function ConfirmButton({
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)} className="text-danger">
+      <Button
+        variant="ghost"
+        size={label ? 'sm' : 'icon'}
+        onClick={() => setOpen(true)}
+        className="text-danger"
+        aria-label={label ? undefined : title}
+      >
         <Trash2 /> {label}
       </Button>
       <Dialog
@@ -45,9 +51,11 @@ export function ConfirmButton({
                 setBusy(true);
                 try {
                   await onConfirm();
-                  setOpen(false);
+                } catch {
+                  setBusy(false);
                 } finally {
                   setBusy(false);
+                  setOpen(false);
                 }
               }}
             >
