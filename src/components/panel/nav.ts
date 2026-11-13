@@ -1,5 +1,6 @@
 import {
   Building2,
+  CalendarDays,
   CreditCard,
   LayoutDashboard,
   Scissors,
@@ -24,6 +25,13 @@ export const PANEL_NAV: PanelNavItem[] = [
     permission: 'analytics.view',
   },
   {
+    href: '/painel/agenda',
+    label: 'Agenda',
+    icon: CalendarDays,
+    mobile: true,
+    description: 'Horários do dia e da semana',
+  },
+  {
     href: '/painel/clientes',
     label: 'Clientes',
     icon: UserRound,
@@ -35,7 +43,6 @@ export const PANEL_NAV: PanelNavItem[] = [
     href: '/painel/equipe',
     label: 'Equipe',
     icon: Users,
-    mobile: true,
     permission: 'staff.manage',
     description: 'Barbeiros, expediente e folgas',
   },
