@@ -133,6 +133,7 @@ export interface Invitation {
   id: string;
   email: string;
   link: string;
+  emailSent: boolean;
 }
 
 export type InvoiceStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELED';
