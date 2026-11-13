@@ -2,7 +2,8 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
+:root,
+.light {
   --brand: #d62839;
   --brand-2: #1e4fd8;
   --background: #ffffff;
@@ -42,6 +43,7 @@
 .dark[data-brand] {
   --brand: var(--tenant-brand-dark, #f0384c);
   --brand-2: var(--tenant-brand-2-dark, #4d7cff);
+  --on-brand: var(--tenant-on-brand-dark, #ffffff);
 }
 
 @theme inline {
