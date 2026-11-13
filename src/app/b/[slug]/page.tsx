@@ -1,4 +1,5 @@
 import { CalendarClock, MapPin, Phone } from 'lucide-react';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Card } from '@/components/ui/card';
@@ -72,13 +73,23 @@ export default async function TenantHome({ params }: { params: Promise<{ slug: s
                 {unit.phone}
               </p>
             ) : null}
-            <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-on-brand">
+            <Link
+              href={`/b/${branding.slug}/agendar?unidade=${unit.id}`}
+              className="inline-flex w-fit items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-brand/90"
+            >
               <CalendarClock className="size-4" aria-hidden />
-              Agendamento online em breve
-            </span>
+              Agendar horário
+            </Link>
           </Card>
         ))}
       </section>
+
+      <Link
+        href={`/b/${branding.slug}/meus-horarios`}
+        className="mt-6 text-center text-sm font-medium text-brand-2 hover:underline"
+      >
+        Ver ou cancelar meus horários
+      </Link>
 
       {branding.showPoweredBy ? (
         <footer className="mt-auto pt-12 text-center text-xs text-muted">
