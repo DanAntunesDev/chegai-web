@@ -16,7 +16,13 @@ import { describeError } from '@/lib/api/errors';
 import type { BillingSummary } from '@/lib/api/types';
 import { formatDate, formatMoney } from '@/lib/format';
 
-export function InvoiceList({ invoices }: { invoices: BillingSummary['invoices'] }) {
+export function InvoiceList({
+  invoices,
+  onPay,
+}: {
+  invoices: BillingSummary['invoices'];
+  onPay?: (invoice: BillingSummary['invoices'][number]) => void;
+}) {
   if (invoices.length === 0) {
     return <p className="text-sm text-muted">Nenhuma fatura emitida ainda.</p>;
   }
@@ -35,7 +41,11 @@ export function InvoiceList({ invoices }: { invoices: BillingSummary['invoices']
             {formatMoney(invoice.amountCents)}
           </span>
           <Badge tone={INVOICE_TONE[invoice.status]}>{INVOICE_LABEL[invoice.status]}</Badge>
-          {invoice.paymentUrl && invoice.status !== 'PAID' ? (
+          {onPay && (invoice.status === 'PENDING' || invoice.status === 'OVERDUE') ? (
+            <Button size="sm" onClick={() => onPay(invoice)}>
+              Pagar com Pix
+            </Button>
+          ) : invoice.paymentUrl && invoice.status !== 'PAID' ? (
             <a
               href={invoice.paymentUrl}
               target="_blank"

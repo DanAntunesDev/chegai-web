@@ -1,14 +1,16 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { InvoiceList } from '@/components/admin/billing-panel';
+import { PixDialog } from '@/components/panel/pix-dialog';
 import { PageHeader } from '@/components/shell/app-shell';
 import { Alert } from '@/components/ui/alert';
 import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { describeError } from '@/lib/api/errors';
-import type { BillingSummary } from '@/lib/api/types';
+import type { BillingSummary, Invoice } from '@/lib/api/types';
 import { formatDate } from '@/lib/format';
 
 export default function SubscriptionPage() {
@@ -17,6 +19,7 @@ export default function SubscriptionPage() {
     queryFn: () => api<BillingSummary>('/v1/tenant/billing'),
   });
   const overdue = billing.data?.invoices.some((invoice) => invoice.status === 'OVERDUE');
+  const [paying, setPaying] = useState<Invoice | null>(null);
 
   return (
     <>
@@ -42,10 +45,11 @@ export default function SubscriptionPage() {
           </Card>
           <Card>
             <CardTitle className="mb-2">Faturas</CardTitle>
-            <InvoiceList invoices={billing.data.invoices} />
+            <InvoiceList invoices={billing.data.invoices} onPay={setPaying} />
           </Card>
         </div>
       ) : null}
+      {paying ? <PixDialog invoice={paying} onClose={() => setPaying(null)} /> : null}
     </>
   );
 }
