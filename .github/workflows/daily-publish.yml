@@ -1,0 +1,66 @@
+name: Daily publish
+
+'on':
+  schedule:
+    - cron: '37 21 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Publish the next commit from develop
+        run: |
+          set -euo pipefail
+          git fetch origin develop:refs/remotes/origin/develop
+
+          published_tree=$(git rev-parse HEAD^{tree})
+          mapfile -t queue < <(git rev-list --first-parent origin/develop)
+          last=""
+          for sha in "${queue[@]}"; do
+            if [ "$(git rev-parse "$sha^{tree}")" = "$published_tree" ]; then
+              last="$sha"
+              break
+            fi
+          done
+
+          if [ -z "$last" ]; then
+            echo "main does not match any commit on develop" >&2
+            exit 1
+          fi
+
+          next=$(git rev-list --reverse --first-parent "$last..origin/develop" | head -n 1)
+          pending=$(git rev-list --count --first-parent "$last..origin/develop")
+
+          if [ -z "$next" ]; then
+            echo "Nothing waiting on develop." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          now=$(TZ=America/Sao_Paulo date '+%Y-%m-%dT%H:%M:%S%z')
+          export GIT_AUTHOR_NAME="$(git log -1 --format=%an "$next")"
+          export GIT_AUTHOR_EMAIL="$(git log -1 --format=%ae "$next")"
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_AUTHOR_DATE="$now"
+          export GIT_COMMITTER_DATE="$now"
+
+          commit=$(git log -1 --format=%B "$next" | git commit-tree "$next^{tree}" -p HEAD)
+          git push origin "$commit:refs/heads/main"
+
+          {
+            echo "Published: $(git log -1 --format=%s "$next")"
+            echo "Still waiting: $((pending - 1))"
+          } >> "$GITHUB_STEP_SUMMARY"
