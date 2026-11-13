@@ -9,6 +9,7 @@ export default defineConfig([
   {
     rules: {
       'no-console': 'error',
+      '@next/next/no-img-element': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
