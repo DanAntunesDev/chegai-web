@@ -1,6 +1,12 @@
 'use client';
 
-import { type QueryKey, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  type QueryKey,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from '../api';
 import type { RequestOptions } from '../api/client';
 import type {
@@ -284,4 +290,20 @@ export function useBookingAction() {
       }),
     [bookingKeys.all, ['panel', 'availability']],
   );
+}
+
+export function useDayBlocks(staffIds: string[], from: string, to: string, enabled: boolean) {
+  return useQueries({
+    queries: staffIds.map((id) => ({
+      queryKey: panelKeys.blocks(id, from, to),
+      queryFn: () => api<ScheduleBlock[]>(`/v1/staff/${id}/blocks`, { query: { from, to } }),
+      enabled,
+      staleTime: 60_000,
+    })),
+    combine: (results) =>
+      Object.fromEntries(staffIds.map((id, index) => [id, results[index]?.data ?? []])) as Record<
+        string,
+        ScheduleBlock[]
+      >,
+  });
 }

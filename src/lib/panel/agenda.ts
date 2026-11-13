@@ -109,3 +109,12 @@ export function gridWindow(
   const end = Math.max(...ranges.map((item) => item.end));
   return { start: Math.floor(start / 60) * 60, end: Math.min(24 * 60, Math.ceil(end / 60) * 60) };
 }
+
+export function snapMinute(offsetPx: number, windowStart: number, pxPerMinute: number, snap = 15) {
+  const raw = windowStart + offsetPx / pxPerMinute;
+  return Math.max(windowStart, Math.round(raw / snap) * snap);
+}
+
+export function canDrag(status: BookingStatus): boolean {
+  return status === 'CONFIRMED';
+}

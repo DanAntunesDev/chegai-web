@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   addDays,
+  canDrag,
   gridWindow,
   localDateOf,
   minuteOfDay,
   rangeFor,
+  snapMinute,
   weekStart,
   zonedToUtc,
 } from './agenda';
@@ -48,5 +50,19 @@ describe('agenda time helpers', () => {
       start: 540,
       end: 1200,
     });
+  });
+});
+
+describe('drag helpers', () => {
+  it('snaps drops to the nearest quarter hour', () => {
+    expect(snapMinute(0, 480, 1.6)).toBe(480);
+    expect(snapMinute(1.6 * 37, 480, 1.6)).toBe(510);
+    expect(snapMinute(1.6 * 38, 480, 1.6)).toBe(525);
+    expect(snapMinute(-50, 480, 1.6)).toBe(480);
+  });
+
+  it('only moves confirmed bookings', () => {
+    expect(canDrag('CONFIRMED')).toBe(true);
+    expect(canDrag('COMPLETED')).toBe(false);
   });
 });
