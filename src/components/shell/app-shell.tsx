@@ -1,7 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import { LogOut } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -15,10 +15,12 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   exact?: boolean;
+  mobile?: boolean;
 }
 
 interface AppShellProps {
   nav: NavItem[];
+  moreHref?: string;
   area: string;
   headerExtra?: ReactNode;
   children: ReactNode;
@@ -28,10 +30,14 @@ function isActive(pathname: string, item: NavItem) {
   return item.exact ? pathname === item.href : pathname.startsWith(item.href);
 }
 
-export function AppShell({ nav, area, headerExtra, children }: AppShellProps) {
+export function AppShell({ nav, moreHref, area, headerExtra, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { session, logout } = useAuth();
+  const mobileNav = moreHref ? nav.filter((item) => item.mobile) : nav;
+  const moreActive =
+    Boolean(moreHref) &&
+    (pathname === moreHref || !mobileNav.some((item) => isActive(pathname, item)));
 
   const signOut = async () => {
     await logout();
@@ -116,7 +122,7 @@ export function AppShell({ nav, area, headerExtra, children }: AppShellProps) {
         aria-label="Principal"
         className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
-        {nav.map((item) => {
+        {mobileNav.map((item) => {
           const active = isActive(pathname, item);
           return (
             <Link
@@ -133,6 +139,19 @@ export function AppShell({ nav, area, headerExtra, children }: AppShellProps) {
             </Link>
           );
         })}
+        {moreHref ? (
+          <Link
+            href={moreHref}
+            aria-current={moreActive ? 'page' : undefined}
+            className={cn(
+              'flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium',
+              moreActive ? 'text-brand' : 'text-muted',
+            )}
+          >
+            <Menu className="size-5" aria-hidden />
+            Mais
+          </Link>
+        ) : null}
       </nav>
     </div>
   );

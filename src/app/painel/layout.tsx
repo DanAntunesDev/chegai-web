@@ -1,17 +1,12 @@
 'use client';
 
-import { CreditCard, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { AppShell, type NavItem } from '@/components/shell/app-shell';
+import { useMe } from '@/components/auth/use-me';
+import { navFor } from '@/components/panel/nav';
+import { AppShell } from '@/components/shell/app-shell';
 import { Select } from '@/components/ui/select';
-
-const NAV: NavItem[] = [
-  { href: '/painel', label: 'Visão geral', icon: LayoutDashboard, exact: true },
-  { href: '/painel/assinatura', label: 'Assinatura', icon: CreditCard },
-  { href: '/painel/seguranca', label: 'Segurança', icon: ShieldCheck },
-];
 
 function TenantSwitcher() {
   const { session, switchTenant } = useAuth();
@@ -39,12 +34,24 @@ function TenantSwitcher() {
   );
 }
 
+function PanelShell({ children }: { children: ReactNode }) {
+  const me = useMe();
+  return (
+    <AppShell
+      nav={navFor(me.data?.permissions)}
+      moreHref="/painel/mais"
+      area="Barbearia"
+      headerExtra={<TenantSwitcher />}
+    >
+      {children}
+    </AppShell>
+  );
+}
+
 export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
     <RequireAuth allow={(session) => Boolean(session.tenant)} fallback="/">
-      <AppShell nav={NAV} area="Barbearia" headerExtra={<TenantSwitcher />}>
-        {children}
-      </AppShell>
+      <PanelShell>{children}</PanelShell>
     </RequireAuth>
   );
 }
