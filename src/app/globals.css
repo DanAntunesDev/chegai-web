@@ -1,0 +1,106 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --brand: #d62839;
+  --brand-2: #1e4fd8;
+  --background: #ffffff;
+  --surface: #f6f6f8;
+  --surface-2: #eeeef2;
+  --foreground: #0b0b0f;
+  --muted: #5d5d6b;
+  --border: #e3e3e9;
+  --ring: var(--brand);
+  --on-brand: #ffffff;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #c81e33;
+}
+
+.dark {
+  --brand: #f0384c;
+  --brand-2: #4d7cff;
+  --background: #0b0b0f;
+  --surface: #131319;
+  --surface-2: #1b1b23;
+  --foreground: #f4f4f6;
+  --muted: #9a9aab;
+  --border: #26262f;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+}
+
+[data-brand] {
+  --brand: var(--tenant-brand-light, #d62839);
+  --brand-2: var(--tenant-brand-2-light, #1e4fd8);
+  --on-brand: var(--tenant-on-brand, #ffffff);
+}
+
+.dark [data-brand],
+.dark[data-brand] {
+  --brand: var(--tenant-brand-dark, #f0384c);
+  --brand-2: var(--tenant-brand-2-dark, #4d7cff);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-on-brand: var(--on-brand);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk Variable', 'Inter Variable', ui-sans-serif, sans-serif;
+  --radius-xl: 0.9rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
