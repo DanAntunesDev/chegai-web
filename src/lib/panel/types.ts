@@ -97,3 +97,46 @@ export interface Page<T> {
   page: number;
   pageSize: number;
 }
+
+export interface Booking {
+  id: string;
+  unitId: string;
+  staffId: string;
+  customerId: string | null;
+  status: import('./agenda').BookingStatus;
+  source: 'PANEL' | 'PUBLIC' | 'WHATSAPP';
+  startsAt: string;
+  endsAt: string;
+  totalPriceCents: number;
+  notes: string | null;
+  cancelReason: string | null;
+  items: {
+    id: string;
+    serviceId: string;
+    name: string;
+    priceCents: number;
+    durationMinutes: number;
+  }[];
+  staff: { id: string; name: string; nickname: string | null };
+  customer: { id: string; name: string; phone: string } | null;
+}
+
+export interface BookingEvent {
+  id: string;
+  fromStatus: string | null;
+  toStatus: string;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface AvailabilitySlot {
+  time: string;
+  startsAt: string;
+  staff: { id: string; name: string; durationMinutes: number; priceCents: number }[];
+}
+
+export interface Availability {
+  date: string;
+  timezone: string;
+  slots: AvailabilitySlot[];
+}

@@ -4,6 +4,9 @@ import { type QueryKey, useMutation, useQuery, useQueryClient } from '@tanstack/
 import { api } from '../api';
 import type { RequestOptions } from '../api/client';
 import type {
+  Availability,
+  Booking,
+  BookingEvent,
   Category,
   Customer,
   Page,
@@ -191,5 +194,94 @@ export function useDeleteCustomer() {
   return useApiMutation(
     (id: string) => send<void>(`/v1/customers/${id}`, 'DELETE'),
     [['panel', 'customers']],
+  );
+}
+
+export const bookingKeys = {
+  all: ['panel', 'bookings'] as const,
+  range: (from: string, to: string, unitId: string) =>
+    ['panel', 'bookings', from, to, unitId] as const,
+  events: (id: string) => ['panel', 'bookings', id, 'events'] as const,
+};
+
+export function useBookings(from: string, to: string, unitId: string) {
+  return useQuery({
+    queryKey: bookingKeys.range(from, to, unitId),
+    queryFn: () =>
+      api<Booking[]>('/v1/bookings', { query: { from, to, unitId: unitId || undefined } }),
+    enabled: Boolean(unitId),
+    refetchInterval: 60_000,
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useBookingEvents(id: string) {
+  return useQuery({
+    queryKey: bookingKeys.events(id),
+    queryFn: () => api<BookingEvent[]>(`/v1/bookings/${id}/events`),
+  });
+}
+
+export function useAvailability(
+  unitId: string,
+  date: string,
+  serviceIds: string[],
+  staffId?: string,
+) {
+  return useQuery({
+    queryKey: ['panel', 'availability', unitId, date, serviceIds.join(','), staffId ?? ''],
+    queryFn: () =>
+      api<Availability>('/v1/availability', {
+        query: { unitId, date, serviceIds: serviceIds.join(','), staffId },
+      }),
+    enabled: Boolean(unitId && date && serviceIds.length),
+  });
+}
+
+function idempotencyKey() {
+  return crypto.randomUUID();
+}
+
+export function useCreateBooking() {
+  return useApiMutation(
+    async (input: {
+      unitId: string;
+      serviceIds: string[];
+      startsAt: string;
+      staffId?: string;
+      customer: { customerId: string } | { customer: { name: string; phone: string } };
+      notes?: string;
+    }) => {
+      const hold = await api<Booking>('/v1/bookings/holds', {
+        method: 'POST',
+        headers: { 'Idempotency-Key': idempotencyKey() },
+        body: {
+          unitId: input.unitId,
+          serviceIds: input.serviceIds,
+          startsAt: input.startsAt,
+          staffId: input.staffId,
+        },
+      });
+      return api<Booking>(`/v1/bookings/${hold.id}/confirm`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': idempotencyKey() },
+        body: { ...input.customer, notes: input.notes },
+      });
+    },
+    [bookingKeys.all, ['panel', 'availability'], ['panel', 'customers']],
+  );
+}
+
+export type BookingAction = 'check-in' | 'complete' | 'no-show' | 'cancel' | 'reschedule';
+
+export function useBookingAction() {
+  return useApiMutation(
+    ({ id, action, body }: { id: string; action: BookingAction; body?: Record<string, unknown> }) =>
+      api<Booking>(`/v1/bookings/${id}/${action}`, {
+        method: 'POST',
+        headers: action === 'reschedule' ? { 'Idempotency-Key': idempotencyKey() } : undefined,
+        body: body ?? {},
+      }),
+    [bookingKeys.all, ['panel', 'availability']],
   );
 }

@@ -46,6 +46,16 @@ const MESSAGES: Record<string, string> = {
   UNIT_NOT_ASSIGNED: 'Esse profissional não atende nessa unidade.',
   SERVICE_NOT_FOUND: 'Serviço não encontrado.',
   STAFF_NOT_FOUND: 'Profissional não encontrado.',
+  SLOT_TAKEN: 'Esse horário acabou de ser ocupado. Escolha outro.',
+  SLOT_UNAVAILABLE: 'Esse horário não está mais disponível.',
+  CHECK_IN_TOO_EARLY: 'Ainda é cedo para registrar a chegada.',
+  BOOKING_CHANGED: 'O agendamento mudou enquanto você editava. Atualize e tente de novo.',
+  BOOKING_NOT_CANCELABLE: 'Esse agendamento não pode mais ser cancelado.',
+  BOOKING_NOT_STARTED: 'O horário ainda não começou.',
+  BOOKING_NOT_CONFIRMED: 'O agendamento precisa estar confirmado.',
+  BOOKING_NOT_CHECKED_IN: 'Registre a chegada antes de concluir.',
+  BOOKING_NOT_ON_HOLD: 'A reserva expirou. Escolha o horário de novo.',
+  IDEMPOTENCY_IN_PROGRESS: 'Ainda processando. Aguarde um instante.',
 };
 
 export function serverFieldErrors(error: unknown): Record<string, string> {
