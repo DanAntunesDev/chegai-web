@@ -14,7 +14,13 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useAuth } from './auth-provider';
 
-export function TwoFactorSetup({ onDone }: { onDone?: () => void }) {
+export function TwoFactorSetup({
+  onDone,
+  description = 'A área administrativa exige um código do aplicativo autenticador (Google Authenticator, Authy, 1Password) além da senha.',
+}: {
+  onDone?: () => void;
+  description?: string;
+}) {
   const { replaceSession } = useAuth();
   const queryClient = useQueryClient();
   const [setup, setSetup] = useState<TotpSetup | null>(null);
@@ -67,10 +73,7 @@ export function TwoFactorSetup({ onDone }: { onDone?: () => void }) {
         <ShieldCheck className="size-5" />
       </span>
       <CardTitle className="text-xl">Ative a verificação em duas etapas</CardTitle>
-      <CardDescription className="mt-1">
-        A área administrativa exige um código do aplicativo autenticador (Google Authenticator,
-        Authy, 1Password) além da senha.
-      </CardDescription>
+      <CardDescription className="mt-1">{description}</CardDescription>
 
       {!setup ? (
         <div className="mt-6 flex flex-col gap-3">
