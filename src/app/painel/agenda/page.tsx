@@ -1,7 +1,8 @@
 'use client';
 
-import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Ban, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { BlockTimeDialog } from '@/components/agenda/block-time-dialog';
 import { BookingDialog } from '@/components/agenda/booking-dialog';
 import { DayGrid, useNowMinute } from '@/components/agenda/day-grid';
 import { DayList } from '@/components/agenda/day-list';
@@ -10,6 +11,7 @@ import { WeekView } from '@/components/agenda/week-view';
 import { PageHeader } from '@/components/shell/app-shell';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
@@ -24,9 +26,17 @@ import {
   rangeFor,
   STATUS_DOT,
   STATUS_LABEL,
+  timeLabel,
   weekStart,
+  zonedToUtc,
 } from '@/lib/panel/agenda';
-import { useBookings, useStaffList, useUnits } from '@/lib/panel/queries';
+import {
+  useBookingAction,
+  useBookings,
+  useDayBlocks,
+  useStaffList,
+  useUnits,
+} from '@/lib/panel/queries';
 import type { Booking } from '@/lib/panel/types';
 
 type View = 'dia' | 'semana';
@@ -50,6 +60,13 @@ export default function AgendaPage() {
   const [showCanceled, setShowCanceled] = useState(false);
   const [selected, setSelected] = useState<Booking | null>(null);
   const [creating, setCreating] = useState<{ staffId?: string } | null>(null);
+  const [blocking, setBlocking] = useState(false);
+  const [pendingMove, setPendingMove] = useState<{
+    booking: Booking;
+    staffId: string;
+    minute: number;
+  } | null>(null);
+  const move = useBookingAction();
 
   const start = view === 'dia' ? date : weekStart(date);
   const range = rangeFor(start, view === 'dia' ? 1 : 7, timezone);
@@ -73,6 +90,13 @@ export default function AgendaPage() {
           (member.isActive || visible.some((booking) => booking.staffId === member.id)),
       ),
     [staff.data, unit?.id, visible],
+  );
+
+  const blocks = useDayBlocks(
+    columns.map((member) => member.id),
+    range.from,
+    range.to,
+    view === 'dia',
   );
 
   const bookedWindow = gridWindow(
@@ -106,9 +130,14 @@ export default function AgendaPage() {
         title="Agenda"
         description={`${visible.filter((booking) => booking.status !== 'CANCELED').length} horários · ${formatMoney(revenue)} previstos`}
         actions={
-          <Button onClick={() => setCreating({})} disabled={!unit}>
-            <Plus /> Agendar
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setBlocking(true)} disabled={!columns.length}>
+              <Ban /> Bloquear
+            </Button>
+            <Button onClick={() => setCreating({})} disabled={!unit}>
+              <Plus /> Agendar
+            </Button>
+          </>
         }
       />
 
@@ -221,11 +250,16 @@ export default function AgendaPage() {
               window={fullWindow}
               timezone={timezone}
               nowMinute={nowMinute}
+              blocks={blocks}
+              dayStart={range.from}
+              dayEnd={range.to}
               onSelect={setSelected}
               onCreate={(staffId) => setCreating({ staffId })}
+              onMove={(booking, staffId, minute) => setPendingMove({ booking, staffId, minute })}
             />
             <p className="mt-2 text-xs text-muted">
-              Dica: clique duas vezes num espaço livre para agendar com aquele profissional.
+              Dica: arraste um horário para remarcar, ou clique duas vezes num espaço livre para
+              agendar.
             </p>
           </div>
           <div className="md:hidden">
@@ -246,6 +280,70 @@ export default function AgendaPage() {
           timezone={timezone}
           onClose={() => setSelected(null)}
         />
+      ) : null}
+      {blocking ? (
+        <BlockTimeDialog
+          staff={columns}
+          date={date}
+          timezone={timezone}
+          onClose={() => setBlocking(false)}
+        />
+      ) : null}
+      {pendingMove ? (
+        <Dialog
+          open
+          onClose={() => {
+            move.reset();
+            setPendingMove(null);
+          }}
+          title="Remarcar horário?"
+          description={`${pendingMove.booking.customer?.name ?? 'Cliente'} para ${timeLabel(pendingMove.minute)} com ${
+            columns.find((member) => member.id === pendingMove.staffId)?.nickname ||
+            columns.find((member) => member.id === pendingMove.staffId)?.name ||
+            ''
+          }`}
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  move.reset();
+                  setPendingMove(null);
+                }}
+              >
+                Voltar
+              </Button>
+              <Button
+                loading={move.isPending}
+                onClick={() =>
+                  move.mutate(
+                    {
+                      id: pendingMove.booking.id,
+                      action: 'reschedule',
+                      body: {
+                        startsAt: zonedToUtc(
+                          date,
+                          timeLabel(pendingMove.minute),
+                          timezone,
+                        ).toISOString(),
+                        staffId: pendingMove.staffId,
+                      },
+                    },
+                    { onSuccess: () => setPendingMove(null) },
+                  )
+                }
+              >
+                Remarcar
+              </Button>
+            </>
+          }
+        >
+          {move.error ? (
+            <Alert>{describeError(move.error)}</Alert>
+          ) : (
+            <p className="text-sm text-muted">O cliente mantém os mesmos serviços.</p>
+          )}
+        </Dialog>
       ) : null}
       {creating && unit ? (
         <NewBookingDialog
