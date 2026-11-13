@@ -56,6 +56,11 @@ const MESSAGES: Record<string, string> = {
   BOOKING_NOT_CHECKED_IN: 'Registre a chegada antes de concluir.',
   BOOKING_NOT_ON_HOLD: 'A reserva expirou. Escolha o horário de novo.',
   IDEMPOTENCY_IN_PROGRESS: 'Ainda processando. Aguarde um instante.',
+  INVALID_CODE: 'Código errado ou vencido. Confira e tente de novo.',
+  TOO_MANY_CODES: 'Muitos códigos pedidos. Espere alguns minutos.',
+  MESSAGING_UNAVAILABLE: 'O envio pelo WhatsApp está indisponível agora. Tente mais tarde.',
+  INVALID_CUSTOMER_TOKEN: 'Sua verificação expirou. Confirme o telefone de novo.',
+  TENANT_NOT_FOUND: 'Barbearia não encontrada.',
 };
 
 export function serverFieldErrors(error: unknown): Record<string, string> {
