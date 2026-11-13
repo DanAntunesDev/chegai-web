@@ -3,6 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { RevenueChart } from '@/components/dashboard/revenue-chart';
+import { type StaffPoint, StaffRanking } from '@/components/dashboard/staff-ranking';
 import { PageHeader } from '@/components/shell/app-shell';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -49,6 +51,17 @@ export default function OverviewPage() {
     queryFn: () => api<AnalyticsSummary>('/v1/analytics/summary', { query: { month } }),
   });
   const isCurrent = month === currentMonth();
+  const breakdown = useQuery({
+    queryKey: ['analytics', 'breakdown', month],
+    queryFn: () =>
+      api<{
+        days: { date: string; revenueCents: number; completedBookings: number }[];
+        staff: StaffPoint[];
+      }>('/v1/analytics/breakdown', { query: { month } }),
+  });
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(
+    new Date(),
+  );
 
   const data = summary.data;
   const tiles = data
@@ -103,7 +116,7 @@ export default function OverviewPage() {
             >
               <ChevronLeft />
             </Button>
-            <span className="min-w-36 text-center text-sm font-medium capitalize">
+            <span className="min-w-36 text-center text-sm font-medium first-letter:uppercase">
               {monthLabel(month)}
             </span>
             <Button
@@ -139,6 +152,22 @@ export default function OverviewPage() {
                 {tile.hideChange ? null : <Change value={tile.change} inverse={tile.inverse} />}
               </Card>
             ))}
+      </div>
+      <div className="mt-6 grid gap-3 lg:grid-cols-[2fr_1fr]">
+        <Card>
+          {breakdown.data ? (
+            <RevenueChart days={breakdown.data.days} today={today} />
+          ) : (
+            <Skeleton className="h-60" />
+          )}
+        </Card>
+        <Card>
+          {breakdown.data ? (
+            <StaffRanking staff={breakdown.data.staff} />
+          ) : (
+            <Skeleton className="h-60" />
+          )}
+        </Card>
       </div>
       {data ? (
         <p className="mt-4 text-xs text-muted">
