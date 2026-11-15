@@ -56,7 +56,7 @@ export function TenantHeader({ branding }: { branding: PublicBranding }) {
       </Link>
       <div className="flex items-center gap-2">
         <Link
-          href={`/b/${branding.slug}/meus-horarios`}
+          href={`/b/${branding.slug}/cliente`}
           className="rounded-lg px-3 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-foreground"
         >
           Meus horários

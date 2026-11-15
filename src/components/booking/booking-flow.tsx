@@ -311,7 +311,7 @@ export function BookingFlow({
             <CalendarPlus className="size-4" aria-hidden /> Salvar na agenda do celular
           </a>
           <Link
-            href={`/b/${slug}/meus-horarios`}
+            href={`/b/${slug}/cliente`}
             className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-medium text-on-brand hover:bg-brand/90 sm:flex-1"
           >
             Ver meus horários
