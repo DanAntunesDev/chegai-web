@@ -205,4 +205,5 @@ export interface PublicProfile {
   displayName: string;
   phone: string | null;
   units: PublicUnit[];
+  deposit?: { required: boolean; percent: number };
 }

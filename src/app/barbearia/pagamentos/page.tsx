@@ -6,6 +6,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { describeError } from '@/lib/api/errors';
 import { cn } from '@/lib/cn';
 import { formatMoney } from '@/lib/format';
@@ -20,6 +21,7 @@ export default function PaymentsPage() {
   const percent = picked ?? settings.data?.depositPercent ?? 50;
 
   const changed = settings.data && settings.data.depositPercent !== percent;
+  const required = settings.data?.depositRequired ?? true;
 
   return (
     <>
@@ -32,8 +34,20 @@ export default function PaymentsPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
           <Card className="flex flex-col gap-5">
-            <div>
-              <CardTitle>Sinal para garantir o horário</CardTitle>
+            <Switch
+              id="deposit-required"
+              label="Exigir o sinal para agendar pelo link"
+              description={
+                required
+                  ? 'O horário do cliente só é confirmado depois que o sinal é pago. Sem pagamento em 30 minutos, a vaga é liberada.'
+                  : 'O cliente agenda pelo link sem pagar nada antes. Você ainda pode mandar um link de cobrança pela agenda.'
+              }
+              checked={required}
+              disabled={save.isPending}
+              onCheckedChange={(checked) => save.mutate({ depositRequired: checked })}
+            />
+            <div className="border-t border-border pt-5">
+              <CardTitle>Valor do sinal</CardTitle>
               <CardDescription>
                 Ao marcar pela agenda você pode mandar um link só do sinal ou do valor total. O
                 restante fica para pagar na hora ou em outro link.
@@ -82,7 +96,7 @@ export default function PaymentsPage() {
               <Button
                 disabled={!changed}
                 loading={save.isPending}
-                onClick={() => save.mutate(percent)}
+                onClick={() => save.mutate({ depositPercent: percent })}
               >
                 Salvar
               </Button>

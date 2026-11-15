@@ -52,6 +52,7 @@ export interface PublicBooking {
   totalPriceCents: number;
   staff: { id: string; name: string };
   items: { serviceId: string; name: string; priceCents: number; durationMinutes: number }[];
+  payment?: { url: string; amountCents: number; expiresAt: string };
 }
 
 export type { Availability };

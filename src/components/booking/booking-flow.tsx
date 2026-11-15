@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CalendarPlus, Check, Clock, Scissors, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,11 +24,12 @@ import {
 } from '@/lib/public/client';
 import { clearCustomerSession } from '@/lib/public/session';
 import { AccountAccess } from './account-access';
+import { DepositStep } from './deposit-step';
 import { calendarFile } from './calendar-file';
 import { unitAddress } from './tenant-header';
 import { useCustomerSession } from './use-customer-session';
 
-type Step = 'unit' | 'services' | 'staff' | 'time' | 'confirm' | 'done';
+type Step = 'unit' | 'services' | 'staff' | 'time' | 'confirm' | 'payment' | 'done';
 
 const STEPS: { key: Step; label: string }[] = [
   { key: 'services', label: 'Serviço' },
@@ -89,11 +90,13 @@ export function BookingFlow({
   units,
   initialUnitId,
   shopName,
+  deposit,
 }: {
   slug: string;
   units: PublicUnit[];
   initialUnitId?: string;
   shopName: string;
+  deposit?: { required: boolean; percent: number };
 }) {
   const base = `/v1/public/tenants/${slug}`;
   const startUnit =
@@ -149,6 +152,8 @@ export function BookingFlow({
     return map;
   }, [chosen]);
   const total = chosen.reduce((sum, item) => sum + item.priceCents, 0);
+  const depositShare = deposit?.required ? Math.round((total * deposit.percent) / 100) : 0;
+  const depositCents = depositShare >= 500 ? depositShare : 0;
   const duration = chosen.reduce((sum, item) => sum + item.durationMinutes, 0);
   const savings = chosen.reduce((sum, item) => sum + comboSavings(item.id, services), 0);
   const barbers = catalog.data ? eligibleStaff(catalog.data.staff, unitId, serviceIds) : [];
@@ -173,6 +178,13 @@ export function BookingFlow({
     return acc;
   }, {});
 
+  const onPaid = useCallback(() => {
+    setBooking((current) =>
+      current ? { ...current, status: 'CONFIRMED', payment: undefined } : current,
+    );
+    setStep('done');
+  }, []);
+
   const finish = async () => {
     if (!slot || !customer) {
       return;
@@ -190,7 +202,7 @@ export function BookingFlow({
         body: { name: customer.customer.name },
       });
       setBooking(confirmed);
-      setStep('done');
+      setStep(confirmed.payment ? 'payment' : 'done');
     } catch (error) {
       if (
         error instanceof ApiError &&
@@ -202,6 +214,10 @@ export function BookingFlow({
       } else if (error instanceof ApiError && error.code === 'INVALID_CUSTOMER_TOKEN') {
         clearCustomerSession(slug);
         setFailure('Sua sessão expirou. Entre de novo para confirmar.');
+      } else if (error instanceof ApiError && error.code === 'PAYMENT_PROVIDER_ERROR') {
+        setFailure(
+          'Não conseguimos gerar o pagamento do sinal agora. Tente de novo em instantes ou fale com a barbearia.',
+        );
       } else {
         setFailure(describeError(error));
       }
@@ -272,6 +288,24 @@ export function BookingFlow({
       : step === 'time'
         ? { label: 'Revisar e confirmar', disabled: !slot, go: () => setStep('confirm') }
         : null;
+
+  const payment = booking?.payment;
+  if (step === 'payment' && booking && payment) {
+    const start = new Date(booking.startsAt);
+    return (
+      <DepositStep
+        slug={slug}
+        booking={{ ...booking, payment }}
+        when={`${LONG_DAY(timezone).format(start)} às ${timeLabel(minuteOfDay(booking.startsAt, timezone))}`}
+        onPaid={onPaid}
+        onExpired={() => {
+          setBooking(null);
+          setSlot(null);
+          setStep('time');
+        }}
+      />
+    );
+  }
 
   if (step === 'done' && booking) {
     const when = new Date(booking.startsAt);
@@ -615,8 +649,14 @@ export function BookingFlow({
                   loading={confirming}
                   onClick={() => void finish()}
                 >
-                  Confirmar horário
+                  {depositCents ? 'Continuar para o pagamento' : 'Confirmar horário'}
                 </Button>
+                {depositCents ? (
+                  <p className="text-center text-sm text-muted">
+                    O horário é confirmado depois do sinal de {formatMoney(depositCents)}. O
+                    restante você paga na barbearia.
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   className="text-sm text-muted hover:text-foreground"

@@ -27,6 +27,7 @@ export default async function BookPage({ params, searchParams }: Props) {
         units={profile.units}
         initialUnitId={unidade}
         shopName={branding.displayName}
+        deposit={profile.deposit}
       />
       <PoweredBy show={branding.showPoweredBy} />
     </div>

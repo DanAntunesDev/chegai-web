@@ -26,6 +26,7 @@ export interface PaymentSummary {
 
 export interface PaymentSettings {
   depositPercent: number;
+  depositRequired: boolean;
   ownAccount: boolean;
 }
 
@@ -72,8 +73,8 @@ export function usePaymentSettings() {
 export function useSavePaymentSettings() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (depositPercent: number) =>
-      api<PaymentSettings>('/v1/payment-settings', { method: 'PUT', body: { depositPercent } }),
+    mutationFn: (body: { depositPercent?: number; depositRequired?: boolean }) =>
+      api<PaymentSettings>('/v1/payment-settings', { method: 'PUT', body }),
     onSuccess: (data) => client.setQueryData(keys.settings, data),
   });
 }
