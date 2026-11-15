@@ -58,7 +58,7 @@ export function BarbershopFinder() {
       <div>
         <h2 className="text-2xl font-semibold">Área do cliente</h2>
         <p className="mt-1 text-sm text-muted">
-          Procure a barbearia onde você marca seus horários.
+          Procure a barbearia para escolher serviço e horário. O cadastro fica para o final.
         </p>
       </div>
       <label className="relative block">
@@ -81,7 +81,7 @@ export function BarbershopFinder() {
             {visible.map((shop) => (
               <li key={shop.slug}>
                 <Link
-                  href={`/b/${shop.slug}/login/cliente`}
+                  href={`/b/${shop.slug}/agendar`}
                   className="flex items-center gap-3 rounded-xl border border-border px-3 py-3 hover:bg-surface-2"
                 >
                   {shop.iconUrl ? (
