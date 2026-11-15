@@ -25,6 +25,7 @@ export interface PublicService {
   description: string | null;
   priceCents: number;
   durationMinutes: number;
+  includes: string[];
 }
 
 export interface PublicStaff {

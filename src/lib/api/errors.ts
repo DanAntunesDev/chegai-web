@@ -27,7 +27,7 @@ export class ApiError extends Error {
 }
 
 const MESSAGES: Record<string, string> = {
-  INVALID_CREDENTIALS: 'E-mail ou senha incorretos.',
+  INVALID_CREDENTIALS: 'Login ou senha incorretos.',
   TOTP_REQUIRED: 'Digite o código do seu aplicativo autenticador.',
   INVALID_TOTP: 'Código inválido. Confira o horário do celular e tente de novo.',
   TOO_MANY_REQUESTS: 'Muitas tentativas. Aguarde um minuto e tente de novo.',
@@ -61,6 +61,11 @@ const MESSAGES: Record<string, string> = {
   MESSAGING_UNAVAILABLE: 'O envio pelo WhatsApp está indisponível agora. Tente mais tarde.',
   INVALID_CUSTOMER_TOKEN: 'Sua verificação expirou. Confirme o telefone de novo.',
   TENANT_NOT_FOUND: 'Barbearia não encontrada.',
+  ACCOUNT_EXISTS: 'Esse WhatsApp já tem conta. Entre com sua senha.',
+  EMAIL_TAKEN: 'Esse e-mail já está em uso.',
+  ACCOUNT_NOT_FOUND: 'Conta não encontrada. Crie sua conta primeiro.',
+  CANNOT_DEMOTE_SELF: 'Você não pode remover o seu próprio acesso.',
+  INVALID_COMBO: 'Um combo precisa de dois ou mais serviços avulsos.',
 };
 
 export function serverFieldErrors(error: unknown): Record<string, string> {

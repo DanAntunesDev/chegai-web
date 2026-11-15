@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { describeError } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format';
 import { minuteOfDay, timeLabel } from '@/lib/panel/agenda';
 import { type PublicBooking, publicApi } from '@/lib/public/client';
-import { PhoneVerification } from './phone-verification';
+import { clearCustomerSession } from '@/lib/public/session';
+import { AccountAccess } from './account-access';
+import { useCustomerSession } from './use-customer-session';
 
 export function MyBookings({ slug, timezone }: { slug: string; timezone: string }) {
   const base = `/v1/public/tenants/${slug}`;
@@ -15,9 +17,24 @@ export function MyBookings({ slug, timezone }: { slug: string; timezone: string 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
-  const load = async () => {
-    setBookings(await publicApi<PublicBooking[]>(`${base}/bookings`));
-  };
+  const session = useCustomerSession(slug);
+
+  const load = useCallback(async () => {
+    try {
+      setBookings(await publicApi<PublicBooking[]>(`${base}/bookings`));
+    } catch (failure) {
+      clearCustomerSession(slug);
+      setBookings(null);
+      setError(describeError(failure));
+    }
+  }, [base, slug]);
+
+  useEffect(() => {
+    if (session) {
+      const frame = requestAnimationFrame(() => void load());
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [session, load]);
 
   const cancel = async (id: string) => {
     setBusy(id);
@@ -32,12 +49,32 @@ export function MyBookings({ slug, timezone }: { slug: string; timezone: string 
     }
   };
 
+  if (!session) {
+    return (
+      <div className="flex flex-col gap-3">
+        {error ? <Alert>{error}</Alert> : null}
+        <AccountAccess slug={slug} />
+      </div>
+    );
+  }
   if (!bookings) {
-    return <PhoneVerification slug={slug} submitLabel="Ver meus horários" onVerified={load} />;
+    return <p className="py-8 text-center text-sm text-muted">Carregando…</p>;
   }
 
   return (
     <div className="flex flex-col gap-3">
+      <p className="flex items-center justify-between text-sm text-muted">
+        <span>
+          Olá, <strong className="text-foreground">{session.customer.name}</strong>
+        </span>
+        <button
+          type="button"
+          className="hover:text-foreground"
+          onClick={() => clearCustomerSession(slug)}
+        >
+          Sair
+        </button>
+      </p>
       {error ? <Alert>{error}</Alert> : null}
       {bookings.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted">Você não tem horários marcados.</p>

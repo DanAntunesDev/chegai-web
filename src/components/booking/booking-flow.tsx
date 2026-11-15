@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError, describeError } from '@/lib/api/errors';
 import type { PublicUnit } from '@/lib/api/types';
 import { cn } from '@/lib/cn';
+import { applyCombos, comboSavings } from '@/lib/combos';
 import { formatMoney } from '@/lib/format';
 import { localDateOf, minuteOfDay, timeLabel, weekdayOf } from '@/lib/panel/agenda';
 import { WEEKDAYS_SHORT } from '@/lib/panel/schedule';
@@ -21,7 +22,9 @@ import {
   type PublicCatalog,
   publicApi,
 } from '@/lib/public/client';
-import { PhoneVerification } from './phone-verification';
+import { clearCustomerSession } from '@/lib/public/session';
+import { AccountAccess } from './account-access';
+import { useCustomerSession } from './use-customer-session';
 
 type Step = 'unit' | 'services' | 'staff' | 'time' | 'identify' | 'done';
 
@@ -52,6 +55,8 @@ export function BookingFlow({
   );
   const [booking, setBooking] = useState<PublicBooking | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const customer = useCustomerSession(slug);
 
   const catalog = useQuery({
     queryKey: ['public', slug, 'catalog', unitId],
@@ -72,6 +77,27 @@ export function BookingFlow({
       }),
     enabled: step === 'time' && Boolean(unitId && serviceIds.length),
   });
+
+  const [comboNotice, setComboNotice] = useState<string | null>(null);
+
+  const toggleService = (id: string, active: boolean) => {
+    const services = catalog.data?.services ?? [];
+    const next = active ? serviceIds.filter((item) => item !== id) : [...serviceIds, id];
+    const normalized = applyCombos(next, services).slice(0, 5);
+    const combo = normalized.find((item) => !next.includes(item));
+    if (combo) {
+      const found = services.find((service) => service.id === combo);
+      const savings = comboSavings(combo, services);
+      setComboNotice(
+        found
+          ? `Juntamos no combo ${found.name}${savings ? `: você economiza ${formatMoney(savings)}` : ''}.`
+          : null,
+      );
+    } else if (!active) {
+      setComboNotice(null);
+    }
+    setServiceIds(normalized);
+  };
 
   const chosen = useMemo(
     () => catalog.data?.services.filter((service) => serviceIds.includes(service.id)) ?? [],
@@ -135,7 +161,7 @@ export function BookingFlow({
     return (
       <div className="flex flex-col items-center gap-4 py-10 text-center">
         <CheckCircle2 className="size-14 text-success" aria-hidden />
-        <h2 className="text-2xl font-bold">Horário confirmado!</h2>
+        <h2 className="text-2xl font-semibold">Horário confirmado!</h2>
         <p className="text-muted">
           {new Intl.DateTimeFormat('pt-BR', {
             weekday: 'long',
@@ -198,6 +224,7 @@ export function BookingFlow({
       {step === 'services' ? (
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold">O que você vai fazer?</h2>
+          {comboNotice ? <Alert tone="success">{comboNotice}</Alert> : null}
           {catalog.isPending ? <Skeleton className="h-48" /> : null}
           {catalog.error ? <Alert>{describeError(catalog.error)}</Alert> : null}
           {catalog.data
@@ -218,13 +245,7 @@ export function BookingFlow({
                           key={service.id}
                           type="button"
                           aria-pressed={active}
-                          onClick={() =>
-                            setServiceIds((current) =>
-                              active
-                                ? current.filter((id) => id !== service.id)
-                                : [...current, service.id].slice(0, 5),
-                            )
-                          }
+                          onClick={() => toggleService(service.id, active)}
                           className={cn(
                             'flex items-center gap-3 rounded-xl border p-4 text-left transition-colors',
                             active
@@ -395,12 +416,44 @@ export function BookingFlow({
             {summary}
           </div>
           {failure ? <Alert>{failure}</Alert> : null}
-          <PhoneVerification
-            slug={slug}
-            askName
-            submitLabel="Confirmar horário"
-            onVerified={finish}
-          />
+          {customer ? (
+            <div className="flex flex-col gap-3">
+              <p className="flex items-center justify-between text-sm text-muted">
+                <span>
+                  Agendando como{' '}
+                  <strong className="text-foreground">{customer.customer.name}</strong>
+                </span>
+                <button
+                  type="button"
+                  className="hover:text-foreground"
+                  onClick={() => clearCustomerSession(slug)}
+                >
+                  Não é você?
+                </button>
+              </p>
+              <Button
+                size="lg"
+                loading={confirming}
+                onClick={async () => {
+                  setConfirming(true);
+                  try {
+                    await finish({ name: customer.customer.name, phone: customer.customer.phone });
+                  } catch (error) {
+                    setFailure(describeError(error));
+                  } finally {
+                    setConfirming(false);
+                  }
+                }}
+              >
+                Confirmar horário
+              </Button>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-muted">Entre ou crie sua conta para confirmar.</p>
+              <AccountAccess slug={slug} />
+            </>
+          )}
         </section>
       ) : null}
 
