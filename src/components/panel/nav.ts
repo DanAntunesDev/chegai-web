@@ -78,6 +78,12 @@ export const PANEL_NAV: PanelNavItem[] = [
     icon: Wallet,
     children: [
       {
+        href: '/painel/pagamentos',
+        label: 'Pagamentos',
+        permission: 'tenant.settings.manage',
+        description: 'Sinal e links de cobrança',
+      },
+      {
         href: '/painel/assinatura',
         label: 'Assinatura',
         permission: 'billing.view',
