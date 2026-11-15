@@ -78,7 +78,7 @@ export function BlockTimeDialog({
       }
     >
       <form id="block-time-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Profissional" htmlFor="block-staff" className="sm:col-span-2">
+        <Field label="Profissional" htmlFor="block-staff" className="sm:col-span-2" required>
           <Select
             id="block-staff"
             value={staffId}
@@ -91,7 +91,7 @@ export function BlockTimeDialog({
             ))}
           </Select>
         </Field>
-        <Field label="Dia" htmlFor="block-day" className="sm:col-span-2">
+        <Field label="Dia" htmlFor="block-day" className="sm:col-span-2" required>
           <Input
             id="block-day"
             type="date"
@@ -99,7 +99,7 @@ export function BlockTimeDialog({
             onChange={(event) => setDay(event.target.value)}
           />
         </Field>
-        <Field label="Das" htmlFor="block-from">
+        <Field label="Das" htmlFor="block-from" required>
           <Input
             id="block-from"
             type="time"
@@ -108,7 +108,7 @@ export function BlockTimeDialog({
             onChange={(event) => setStart(event.target.value)}
           />
         </Field>
-        <Field label="Até" htmlFor="block-to">
+        <Field label="Até" htmlFor="block-to" required>
           <Input
             id="block-to"
             type="time"

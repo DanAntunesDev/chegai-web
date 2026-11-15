@@ -1,6 +1,7 @@
 'use client';
 
 import { Ban, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { BlockTimeDialog } from '@/components/agenda/block-time-dialog';
 import { BookingDialog } from '@/components/agenda/booking-dialog';
@@ -37,7 +38,8 @@ import {
   useStaffList,
   useUnits,
 } from '@/lib/panel/queries';
-import type { Booking } from '@/lib/panel/types';
+import { api } from '@/lib/api';
+import type { Booking, ScheduleBlock } from '@/lib/panel/types';
 
 type View = 'dia' | 'semana';
 
@@ -67,6 +69,20 @@ export default function AgendaPage() {
     minute: number;
   } | null>(null);
   const move = useBookingAction();
+  const [unblocking, setUnblocking] = useState<{ block: ScheduleBlock; staffId: string } | null>(
+    null,
+  );
+  const queryClient = useQueryClient();
+  const removeBlock = useMutation({
+    mutationFn: ({ staffId, blockId }: { staffId: string; blockId: string }) =>
+      api<void>(`/v1/staff/${staffId}/blocks/${blockId}`, { method: 'DELETE' }),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: ['panel', 'staff', variables.staffId, 'blocks'],
+      });
+      setUnblocking(null);
+    },
+  });
 
   const start = view === 'dia' ? date : weekStart(date);
   const range = rangeFor(start, view === 'dia' ? 1 : 7, timezone);
@@ -256,6 +272,10 @@ export default function AgendaPage() {
               onSelect={setSelected}
               onCreate={(staffId) => setCreating({ staffId })}
               onMove={(booking, staffId, minute) => setPendingMove({ booking, staffId, minute })}
+              onBlockSelect={(block, staffId) => {
+                removeBlock.reset();
+                setUnblocking({ block, staffId });
+              }}
             />
             <p className="mt-2 text-xs text-muted">
               Dica: arraste um horário para remarcar, ou clique duas vezes num espaço livre para
@@ -288,6 +308,37 @@ export default function AgendaPage() {
           timezone={timezone}
           onClose={() => setBlocking(false)}
         />
+      ) : null}
+      {unblocking ? (
+        <Dialog
+          open
+          onClose={() => setUnblocking(null)}
+          title="Desbloquear horário?"
+          description={`${timeLabel(minuteOfDay(unblocking.block.startsAt, timezone))} às ${timeLabel(
+            minuteOfDay(unblocking.block.endsAt, timezone),
+          )}${unblocking.block.reason ? ` · ${unblocking.block.reason}` : ''}`}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setUnblocking(null)}>
+                Voltar
+              </Button>
+              <Button
+                loading={removeBlock.isPending}
+                onClick={() =>
+                  removeBlock.mutate({ staffId: unblocking.staffId, blockId: unblocking.block.id })
+                }
+              >
+                Desbloquear
+              </Button>
+            </>
+          }
+        >
+          {removeBlock.error ? (
+            <Alert>{describeError(removeBlock.error)}</Alert>
+          ) : (
+            <p className="text-sm text-muted">O horário volta a aparecer para agendamento.</p>
+          )}
+        </Dialog>
       ) : null}
       {pendingMove ? (
         <Dialog

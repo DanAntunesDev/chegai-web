@@ -19,6 +19,7 @@ interface DayGridProps {
   onSelect: (booking: Booking) => void;
   onCreate: (staffId: string, minute: number) => void;
   onMove?: (booking: Booking, staffId: string, minute: number) => void;
+  onBlockSelect?: (block: ScheduleBlock, staffId: string) => void;
 }
 
 const BLOCK_LABEL: Record<ScheduleBlock['kind'], string> = {
@@ -40,6 +41,7 @@ export function DayGrid({
   onSelect,
   onCreate,
   onMove,
+  onBlockSelect,
 }: DayGridProps) {
   const [dragging, setDragging] = useState<Booking | null>(null);
   const [hover, setHover] = useState<{ staffId: string; minute: number } | null>(null);
@@ -126,16 +128,20 @@ export function DayGrid({
                 return null;
               }
               return (
-                <div
+                <button
                   key={block.id}
-                  className="pointer-events-none absolute inset-x-0 flex items-start justify-end bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,var(--surface-2)_6px,var(--surface-2)_12px)] p-1 text-[10px] font-medium text-muted"
+                  type="button"
+                  disabled={!onBlockSelect}
+                  onClick={() => onBlockSelect?.(block, member.id)}
+                  title={onBlockSelect ? 'Clique para desbloquear' : undefined}
+                  className="absolute inset-x-0 flex items-start justify-end bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,var(--surface-2)_6px,var(--surface-2)_12px)] p-1 text-[10px] font-medium text-muted enabled:cursor-pointer enabled:hover:text-foreground"
                   style={{
                     top: (start - window.start) * PX_PER_MINUTE,
                     height: (end - start) * PX_PER_MINUTE,
                   }}
                 >
                   {block.reason || BLOCK_LABEL[block.kind]}
-                </div>
+                </button>
               );
             })}
             {dragging && hover?.staffId === member.id ? (
