@@ -41,7 +41,7 @@ export function TenantStatusGate({ children }: { children: ReactNode }) {
         <span className="grid size-14 place-items-center rounded-2xl bg-danger/12 text-danger">
           <Lock className="size-6" aria-hidden />
         </span>
-        <h1 className="text-2xl font-bold">Acesso suspenso</h1>
+        <h1 className="text-2xl font-semibold">Acesso suspenso</h1>
         <p className="text-muted">
           Há uma fatura em atraso. A agenda online continua guardada e volta a funcionar assim que o
           pagamento for confirmado.

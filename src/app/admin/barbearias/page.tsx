@@ -88,7 +88,7 @@ export default function TenantsPage() {
               >
                 <span
                   aria-hidden
-                  className="grid size-10 shrink-0 place-items-center rounded-lg font-display font-bold text-white"
+                  className="grid size-10 shrink-0 place-items-center rounded-lg font-display font-semibold text-white"
                   style={{ background: tenant.branding?.primaryColor ?? '#D62839' }}
                 >
                   {tenant.displayName.charAt(0)}

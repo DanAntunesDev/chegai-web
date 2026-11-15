@@ -1,8 +1,8 @@
 'use client';
 
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ExternalLink, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { BillingPanel } from '@/components/admin/billing-panel';
 import { BrandingEditor } from '@/components/admin/branding-editor';
@@ -12,7 +12,8 @@ import { TenantPlanForm } from '@/components/admin/tenant-plan-form';
 import { PageHeader } from '@/components/shell/app-shell';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { useAuth } from '@/components/auth/auth-provider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs } from '@/components/ui/tabs';
 import { STATUS_LABEL, STATUS_TONE } from '@/lib/admin/labels';
@@ -32,12 +33,15 @@ const SECTIONS: { value: Section; label: string }[] = [
 export default function TenantPage() {
   const { id } = useParams<{ id: string }>();
   const tenant = useTenant(id);
+  const router = useRouter();
+  const { switchTenant } = useAuth();
+  const [opening, setOpening] = useState(false);
   const [section, setSection] = useState<Section>('dados');
 
   return (
     <>
       <Link
-        href="/admin"
+        href="/admin/barbearias"
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> Barbearias
@@ -62,6 +66,22 @@ export default function TenantPage() {
                 <Badge tone={STATUS_TONE[tenant.data.status]} className="self-center">
                   {STATUS_LABEL[tenant.data.status]}
                 </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  loading={opening}
+                  onClick={async () => {
+                    setOpening(true);
+                    try {
+                      await switchTenant(tenant.data.slug);
+                      router.push('/painel');
+                    } finally {
+                      setOpening(false);
+                    }
+                  }}
+                >
+                  <LayoutDashboard /> Abrir painel
+                </Button>
                 <a
                   href={`/b/${tenant.data.slug}`}
                   target="_blank"

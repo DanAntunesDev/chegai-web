@@ -1,6 +1,6 @@
 'use client';
 
-import { Store } from 'lucide-react';
+import { LayoutDashboard, Store, UsersRound } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { TwoFactorSetup } from '@/components/auth/two-factor-setup';
@@ -8,7 +8,11 @@ import { useMe } from '@/components/auth/use-me';
 import { AppShell, type NavItem } from '@/components/shell/app-shell';
 import { Spinner } from '@/components/ui/spinner';
 
-const NAV: NavItem[] = [{ href: '/admin', label: 'Barbearias', icon: Store }];
+const NAV: NavItem[] = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true, mobile: true },
+  { href: '/admin/barbearias', label: 'Barbearias', icon: Store, mobile: true },
+  { href: '/admin/usuarios', label: 'Usuários', icon: UsersRound, mobile: true },
+];
 
 function AdminGate({ children }: { children: ReactNode }) {
   const me = useMe();
