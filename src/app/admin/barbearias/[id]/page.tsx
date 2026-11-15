@@ -8,6 +8,7 @@ import { BillingPanel } from '@/components/admin/billing-panel';
 import { BrandingEditor } from '@/components/admin/branding-editor';
 import { InviteForm } from '@/components/admin/invite-form';
 import { TenantDetailsForm } from '@/components/admin/tenant-details-form';
+import { TenantPaymentsPanel } from '@/components/admin/tenant-payments-panel';
 import { TenantPlanForm } from '@/components/admin/tenant-plan-form';
 import { PageHeader } from '@/components/shell/app-shell';
 import { Alert } from '@/components/ui/alert';
@@ -20,13 +21,14 @@ import { STATUS_LABEL, STATUS_TONE } from '@/lib/admin/labels';
 import { useTenant } from '@/lib/admin/queries';
 import { describeError } from '@/lib/api/errors';
 
-type Section = 'dados' | 'plano' | 'marca' | 'cobranca' | 'equipe';
+type Section = 'dados' | 'plano' | 'marca' | 'cobranca' | 'recebimentos' | 'equipe';
 
 const SECTIONS: { value: Section; label: string }[] = [
   { value: 'dados', label: 'Dados' },
   { value: 'plano', label: 'Plano e limites' },
   { value: 'marca', label: 'Marca' },
   { value: 'cobranca', label: 'Cobrança' },
+  { value: 'recebimentos', label: 'Recebimentos' },
   { value: 'equipe', label: 'Equipe' },
 ];
 
@@ -105,6 +107,7 @@ export default function TenantPage() {
           {section === 'plano' ? <TenantPlanForm tenant={tenant.data} /> : null}
           {section === 'marca' ? <BrandingEditor tenant={tenant.data} /> : null}
           {section === 'cobranca' ? <BillingPanel tenantId={tenant.data.id} /> : null}
+          {section === 'recebimentos' ? <TenantPaymentsPanel tenantId={tenant.data.id} /> : null}
           {section === 'equipe' ? <InviteForm tenantId={tenant.data.id} /> : null}
         </>
       )}
