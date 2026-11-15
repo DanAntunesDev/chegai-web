@@ -15,6 +15,7 @@ import { localDateOf, minuteOfDay, STATUS_LABEL, timeLabel } from '@/lib/panel/a
 import { type BookingAction, useBookingAction, useBookingEvents } from '@/lib/panel/queries';
 import type { Booking } from '@/lib/panel/types';
 import { formatPhone, whatsappLink } from '@/lib/phone';
+import { PaymentPanel } from './payment-panel';
 import { type PickedSlot, SlotPicker } from './slot-picker';
 
 const SOURCE: Record<Booking['source'], string> = {
@@ -99,6 +100,14 @@ export function BookingDialog({
             <span className="tabular-nums">{formatMoney(booking.totalPriceCents)}</span>
           </li>
         </ul>
+
+        {booking.status !== 'HOLD' && booking.totalPriceCents > 0 ? (
+          <PaymentPanel
+            booking={booking}
+            timezone={timezone}
+            canCharge={canManage && booking.status !== 'CANCELED' && booking.status !== 'NO_SHOW'}
+          />
+        ) : null}
 
         {booking.notes ? (
           <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm">{booking.notes}</p>

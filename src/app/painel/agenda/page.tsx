@@ -404,6 +404,7 @@ export default function AgendaPage() {
           date={date}
           staff={staff.data ?? []}
           initialStaffId={creating.staffId}
+          timezone={timezone}
         />
       ) : null}
     </>

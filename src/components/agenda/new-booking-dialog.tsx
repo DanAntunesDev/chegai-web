@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleCheck } from 'lucide-react';
 import { type FormEvent, useDeferredValue, useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,9 @@ import { cn } from '@/lib/cn';
 import { applyCombos } from '@/lib/combos';
 import { formatMoney } from '@/lib/format';
 import { useCreateBooking, useCustomers, useServices } from '@/lib/panel/queries';
-import type { Customer, Staff } from '@/lib/panel/types';
+import type { Booking, Customer, Staff } from '@/lib/panel/types';
 import { formatPhone } from '@/lib/phone';
+import { PaymentPanel } from './payment-panel';
 import { type PickedSlot, SlotPicker } from './slot-picker';
 
 interface NewBookingDialogProps {
@@ -24,6 +26,7 @@ interface NewBookingDialogProps {
   date: string;
   staff: Staff[];
   initialStaffId?: string;
+  timezone?: string;
 }
 
 export function NewBookingDialog({
@@ -33,6 +36,7 @@ export function NewBookingDialog({
   date: initialDate,
   staff,
   initialStaffId,
+  timezone = 'America/Sao_Paulo',
 }: NewBookingDialogProps) {
   const services = useServices();
   const create = useCreateBooking();
@@ -49,6 +53,7 @@ export function NewBookingDialog({
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
+  const [created, setCreated] = useState<Booking | null>(null);
 
   const barbers = staff.filter((member) => member.kind === 'BARBER' && member.isActive);
   const chosen = services.data?.filter((service) => serviceIds.includes(service.id)) ?? [];
@@ -80,9 +85,28 @@ export function NewBookingDialog({
           : { customer: { name: name.trim(), phone } },
         notes: notes.trim() || undefined,
       },
-      { onSuccess: onClose },
+      { onSuccess: (booking) => setCreated(booking) },
     );
   };
+
+  if (created) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        title="Horário marcado"
+        description={`${created.customer?.name ?? 'Cliente'} às ${slot?.time ?? ''} com ${slot?.staffName ?? ''}`}
+        footer={<Button onClick={onClose}>Concluir</Button>}
+      >
+        <div className="flex flex-col gap-3">
+          <p className="flex items-center gap-2 text-sm text-success">
+            <CircleCheck className="size-4" /> Agendamento confirmado na agenda.
+          </p>
+          <PaymentPanel booking={created} timezone={timezone} canCharge />
+        </div>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog
