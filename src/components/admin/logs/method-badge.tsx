@@ -25,7 +25,7 @@ export function StatusPill({ code }: { code: number }) {
   return (
     <span
       className={cn(
-        'inline-flex rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold tabular-nums',
+        'inline-flex w-12 justify-center justify-self-start rounded-full py-0.5 font-mono text-xs font-semibold tabular-nums',
         code >= 500
           ? 'bg-danger/12 text-danger'
           : code >= 400
