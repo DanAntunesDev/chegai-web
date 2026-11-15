@@ -93,6 +93,21 @@ export default function OverviewPage() {
           inverse: true,
         },
         {
+          label: 'Cancelamentos',
+          value: data.current.canceledBookings.toLocaleString('pt-BR'),
+          change:
+            data.previous.canceledBookings === 0
+              ? data.current.canceledBookings === 0
+                ? 0
+                : null
+              : Math.round(
+                  ((data.current.canceledBookings - data.previous.canceledBookings) /
+                    data.previous.canceledBookings) *
+                    1000,
+                ) / 10,
+          inverse: true,
+        },
+        {
           label: 'Clientes novos',
           value: data.current.newCustomers.toLocaleString('pt-BR'),
           change: null,
@@ -140,13 +155,13 @@ export default function OverviewPage() {
         </Alert>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {summary.isPending
-          ? [0, 1, 2, 3, 4, 5].map((item) => <Skeleton key={item} className="h-28" />)
+          ? [0, 1, 2, 3, 4, 5, 6].map((item) => <Skeleton key={item} className="h-28" />)
           : tiles.map((tile) => (
               <Card key={tile.label} className="flex flex-col gap-1 p-4">
                 <span className="text-sm text-muted">{tile.label}</span>
-                <span className="font-display text-2xl font-bold tabular-nums sm:text-3xl">
+                <span className="text-2xl font-semibold tabular-nums sm:text-[28px]">
                   {tile.value}
                 </span>
                 {tile.hideChange ? null : <Change value={tile.change} inverse={tile.inverse} />}
@@ -169,11 +184,6 @@ export default function OverviewPage() {
           )}
         </Card>
       </div>
-      {data ? (
-        <p className="mt-4 text-xs text-muted">
-          {data.current.canceledBookings.toLocaleString('pt-BR')} cancelamentos no mês.
-        </p>
-      ) : null}
     </>
   );
 }
