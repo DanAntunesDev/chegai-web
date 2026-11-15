@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, PlugZap, Store, UsersRound } from 'lucide-react';
+import { LayoutDashboard, PlugZap, ScrollText, Store, UsersRound } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { TwoFactorSetup } from '@/components/auth/two-factor-setup';
@@ -13,6 +13,7 @@ const NAV: NavItem[] = [
   { href: '/admin/barbearias', label: 'Barbearias', icon: Store, mobile: true },
   { href: '/admin/usuarios', label: 'Usuários', icon: UsersRound, mobile: true },
   { href: '/admin/integracoes', label: 'Integrações', icon: PlugZap },
+  { href: '/admin/logs', label: 'Logs', icon: ScrollText },
 ];
 
 function AdminGate({ children }: { children: ReactNode }) {
