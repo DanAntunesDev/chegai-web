@@ -31,8 +31,8 @@ export default function IntegrationsPage() {
   return (
     <>
       <PageHeader
-        title="Integrações"
-        description="Credenciais das APIs externas e os avisos automáticos para outros sistemas."
+        title="Integrações da plataforma"
+        description="Credenciais compartilhadas por todas as barbearias. O que é de cada barbearia fica na página dela, em Integrações."
       />
       <div className="mb-5">
         <Tabs

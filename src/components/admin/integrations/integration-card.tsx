@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import type { UseMutationResult } from '@tanstack/react-query';
 import {
   type IntegrationDefinition,
   type IntegrationValues,
@@ -17,7 +18,7 @@ import {
 } from '@/lib/admin/integrations';
 import { describeError } from '@/lib/api/errors';
 
-function initialDraft(def: IntegrationDefinition, values: IntegrationValues | undefined) {
+function initialDraft(def: IntegrationDefinition<string>, values: IntegrationValues | undefined) {
   return Object.fromEntries(
     def.fields.map((field) => {
       const value = values?.[field.name];
@@ -25,6 +26,9 @@ function initialDraft(def: IntegrationDefinition, values: IntegrationValues | un
     }),
   );
 }
+
+type SaveMutation = UseMutationResult<unknown, Error, Record<string, string>>;
+type TestMutation = UseMutationResult<{ ok: boolean; detail: string }, Error, void>;
 
 export function IntegrationCard({
   def,
@@ -35,6 +39,20 @@ export function IntegrationCard({
 }) {
   const save = useSaveIntegration(def.key);
   const test = useTestIntegration(def.key);
+  return <IntegrationForm def={def} values={values} save={save} test={test} />;
+}
+
+export function IntegrationForm({
+  def,
+  values,
+  save,
+  test,
+}: {
+  def: IntegrationDefinition<string>;
+  values: IntegrationValues | undefined;
+  save: SaveMutation;
+  test: TestMutation;
+}) {
   const [draft, setDraft] = useState<Record<string, string>>(() => initialDraft(def, values));
   const [saved, setSaved] = useState(false);
   const configured = isConfigured(values, def);

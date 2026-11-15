@@ -15,8 +15,8 @@ export interface IntegrationField {
   hint?: string;
 }
 
-export interface IntegrationDefinition {
-  key: IntegrationKey;
+export interface IntegrationDefinition<K extends string = IntegrationKey> {
+  key: K;
   title: string;
   description: string;
   fields: IntegrationField[];
@@ -127,7 +127,58 @@ export const EVENT_LABEL: Record<string, string> = {
   'customer.registered': 'Cliente criou conta',
 };
 
-export function isConfigured(values: IntegrationValues | undefined, def: IntegrationDefinition) {
+export type TenantIntegrationKey = 'whatsapp' | 'n8n' | 'google';
+
+export const TENANT_INTEGRATION_DEFS: IntegrationDefinition<TenantIntegrationKey>[] = [
+  {
+    key: 'whatsapp',
+    title: 'WhatsApp',
+    description:
+      'Número da barbearia na API oficial. O app da Meta fica nas integrações da plataforma.',
+    fields: [
+      { name: 'displayPhone', label: 'Número', placeholder: '+55 38 99999-0000' },
+      { name: 'businessAccountId', label: 'ID da conta do WhatsApp Business' },
+      { name: 'phoneNumberId', label: 'ID do número' },
+      {
+        name: 'accessToken',
+        label: 'Token de acesso',
+        secret: true,
+        hint: 'Deixe em branco para usar o token da plataforma.',
+      },
+    ],
+  },
+  {
+    key: 'n8n',
+    title: 'Automações (n8n)',
+    description: 'Fluxo do agente que atende os clientes desta barbearia.',
+    fields: [
+      {
+        name: 'agentWebhookUrl',
+        label: 'Webhook do agente',
+        placeholder: 'https://n8n.suaempresa.com/webhook/barbearia',
+      },
+      { name: 'apiKey', label: 'Chave do fluxo', secret: true },
+    ],
+  },
+  {
+    key: 'google',
+    title: 'Google Agenda',
+    description: 'Agenda do Google onde os horários desta barbearia são espelhados.',
+    fields: [
+      {
+        name: 'calendarId',
+        label: 'ID da agenda',
+        placeholder: 'barbearia@group.calendar.google.com',
+      },
+      { name: 'accountEmail', label: 'Conta Google', placeholder: 'contato@barbearia.com.br' },
+    ],
+  },
+];
+
+export function isConfigured(
+  values: IntegrationValues | undefined,
+  def: IntegrationDefinition<string>,
+) {
   return Boolean(values) && def.fields.some((field) => values?.[field.name]);
 }
 
@@ -166,17 +217,17 @@ export function useTestIntegration(key: IntegrationKey) {
   });
 }
 
-export function useWebhooks() {
+export function useWebhooks(tenantId?: string) {
   return useQuery({
-    queryKey: keys.webhooks,
-    queryFn: () => api<WebhookEndpoint[]>('/v1/admin/webhooks'),
+    queryKey: [...keys.webhooks, tenantId ?? 'all'],
+    queryFn: () => api<WebhookEndpoint[]>('/v1/admin/webhooks', { query: { tenantId } }),
   });
 }
 
 export function useCreateWebhook() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; url: string; events: string[] }) =>
+    mutationFn: (body: { name: string; url: string; events: string[]; tenantId?: string }) =>
       api<WebhookEndpoint & { secret: string }>('/v1/admin/webhooks', { method: 'POST', body }),
     onSuccess: () => client.invalidateQueries({ queryKey: keys.webhooks }),
   });
@@ -230,6 +281,42 @@ export function usePingWebhook() {
   });
 }
 
+export interface TenantIntegrations {
+  asaas: { depositPercent: number; ownAccount: boolean };
+  whatsapp: { values: IntegrationValues; updatedAt: string | null };
+  n8n: { values: IntegrationValues; updatedAt: string | null };
+  google: { values: IntegrationValues; updatedAt: string | null };
+}
+
+export function useTenantIntegrations(id: string) {
+  return useQuery({
+    queryKey: ['admin', 'tenant', id, 'integrations'],
+    queryFn: () => api<TenantIntegrations>(`/v1/admin/tenants/${id}/integrations`),
+  });
+}
+
+export function useSaveTenantIntegration(id: string, key: TenantIntegrationKey) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, string>) =>
+      api<IntegrationValues>(`/v1/admin/tenants/${id}/integrations/${key}`, {
+        method: 'PUT',
+        body,
+      }),
+    onSuccess: () =>
+      client.invalidateQueries({ queryKey: ['admin', 'tenant', id, 'integrations'] }),
+  });
+}
+
+export function useTestTenantIntegration(id: string, key: TenantIntegrationKey) {
+  return useMutation({
+    mutationFn: () =>
+      api<{ ok: boolean; detail: string }>(`/v1/admin/tenants/${id}/integrations/${key}/test`, {
+        method: 'POST',
+      }),
+  });
+}
+
 export function useTenantPayments(id: string) {
   return useQuery({
     queryKey: keys.tenantPayments(id),
@@ -246,6 +333,11 @@ export function useSaveTenantPayments(id: string) {
         method: 'PUT',
         body,
       }),
-    onSuccess: (data) => client.setQueryData(keys.tenantPayments(id), data),
+    onSuccess: async (data) => {
+      client.setQueryData(keys.tenantPayments(id), data);
+      await client.invalidateQueries({ queryKey: ['admin', 'tenant', id, 'integrations'] });
+    },
   });
 }
+
+export const WEBHOOK_EVENTS = Object.keys(EVENT_LABEL);

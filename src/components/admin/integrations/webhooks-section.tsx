@@ -49,10 +49,12 @@ function SecretDialog({ secret, onClose }: { secret: string; onClose: () => void
 
 function CreateWebhookDialog({
   events,
+  tenantId,
   onClose,
   onCreated,
 }: {
   events: string[];
+  tenantId?: string;
   onClose: () => void;
   onCreated: (secret: string) => void;
 }) {
@@ -64,7 +66,7 @@ function CreateWebhookDialog({
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     create.mutate(
-      { name: name.trim(), url: url.trim(), events: selected },
+      { name: name.trim(), url: url.trim(), events: selected, tenantId },
       { onSuccess: (endpoint) => onCreated(endpoint.secret) },
     );
   };
@@ -251,8 +253,16 @@ function WebhookRow({
   );
 }
 
-export function WebhooksSection({ events }: { events: string[] }) {
-  const webhooks = useWebhooks();
+export function WebhooksSection({
+  events,
+  tenantId,
+  description = 'Mande os eventos da plataforma para o n8n ou qualquer sistema que precise reagir a eles.',
+}: {
+  events: string[];
+  tenantId?: string;
+  description?: string;
+}) {
+  const webhooks = useWebhooks(tenantId);
   const [creating, setCreating] = useState(false);
   const [secret, setSecret] = useState<string | null>(null);
 
@@ -261,9 +271,7 @@ export function WebhooksSection({ events }: { events: string[] }) {
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <CardTitle>Webhooks de saída</CardTitle>
-          <CardDescription>
-            Mande os eventos da plataforma para o n8n ou qualquer sistema que precise reagir a eles.
-          </CardDescription>
+          <CardDescription>{description}</CardDescription>
         </div>
         <Button size="sm" onClick={() => setCreating(true)}>
           <Plus /> Novo webhook
@@ -286,6 +294,7 @@ export function WebhooksSection({ events }: { events: string[] }) {
       {creating ? (
         <CreateWebhookDialog
           events={events}
+          tenantId={tenantId}
           onClose={() => setCreating(false)}
           onCreated={(value) => {
             setCreating(false);

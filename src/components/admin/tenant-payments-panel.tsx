@@ -29,7 +29,7 @@ export function TenantPaymentsPanel({ tenantId }: { tenantId: string }) {
     <Card className="flex flex-col gap-4">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <CardTitle>Recebimentos da barbearia</CardTitle>
+          <CardTitle>Asaas (recebimentos)</CardTitle>
           <CardDescription>
             Os links de pagamento dos agendamentos usam a conta Asaas da barbearia quando houver
             chave. Sem chave, usam a conta da plataforma.
