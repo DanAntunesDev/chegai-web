@@ -20,9 +20,14 @@ export default async function BookPage({ params, searchParams }: Props) {
     notFound();
   }
   return (
-    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 px-5 py-6">
+    <div className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-8 px-5 pt-5 pb-28 lg:pb-8">
       <TenantHeader branding={branding} />
-      <BookingFlow slug={branding.slug} units={profile.units} initialUnitId={unidade} />
+      <BookingFlow
+        slug={branding.slug}
+        units={profile.units}
+        initialUnitId={unidade}
+        shopName={branding.displayName}
+      />
       <PoweredBy show={branding.showPoweredBy} />
     </div>
   );

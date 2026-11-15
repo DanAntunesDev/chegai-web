@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, Clock, User } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, Check, Clock, Scissors, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Alert } from '@/components/ui/alert';
@@ -24,20 +24,76 @@ import {
 } from '@/lib/public/client';
 import { clearCustomerSession } from '@/lib/public/session';
 import { AccountAccess } from './account-access';
+import { calendarFile } from './calendar-file';
+import { unitAddress } from './tenant-header';
 import { useCustomerSession } from './use-customer-session';
 
-type Step = 'unit' | 'services' | 'staff' | 'time' | 'identify' | 'done';
+type Step = 'unit' | 'services' | 'staff' | 'time' | 'confirm' | 'done';
+
+const STEPS: { key: Step; label: string }[] = [
+  { key: 'services', label: 'Serviço' },
+  { key: 'staff', label: 'Profissional' },
+  { key: 'time', label: 'Horário' },
+  { key: 'confirm', label: 'Confirmar' },
+];
 
 const ANY = 'any';
+
+const LONG_DAY = (timeZone: string) =>
+  new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone });
+
+function period(minutes: number) {
+  if (minutes < 12 * 60) return 'Manhã';
+  if (minutes < 18 * 60) return 'Tarde';
+  return 'Noite';
+}
+
+function Stepper({ step, onJump }: { step: Step; onJump: (step: Step) => void }) {
+  const index = STEPS.findIndex((item) => item.key === step);
+  return (
+    <ol className="flex items-center gap-2" aria-label="Etapas do agendamento">
+      {STEPS.map((item, position) => {
+        const done = position < index;
+        const current = position === index;
+        return (
+          <li key={item.key} className="flex flex-1 flex-col gap-1.5">
+            <button
+              type="button"
+              disabled={!done}
+              onClick={() => onJump(item.key)}
+              aria-current={current ? 'step' : undefined}
+              className="h-1.5 w-full rounded-full bg-surface-2 enabled:cursor-pointer"
+            >
+              <span
+                className={cn(
+                  'block h-full rounded-full bg-brand transition-[width] duration-300',
+                  done || current ? 'w-full' : 'w-0',
+                  current && 'opacity-60',
+                )}
+              />
+            </button>
+            <span
+              className={cn('text-xs', current ? 'font-semibold text-foreground' : 'text-muted')}
+            >
+              {item.label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 export function BookingFlow({
   slug,
   units,
   initialUnitId,
+  shopName,
 }: {
   slug: string;
   units: PublicUnit[];
   initialUnitId?: string;
+  shopName: string;
 }) {
   const base = `/v1/public/tenants/${slug}`;
   const startUnit =
@@ -78,40 +134,51 @@ export function BookingFlow({
     enabled: step === 'time' && Boolean(unitId && serviceIds.length),
   });
 
-  const [comboNotice, setComboNotice] = useState<string | null>(null);
-
-  const toggleService = (id: string, active: boolean) => {
-    const services = catalog.data?.services ?? [];
-    const next = active ? serviceIds.filter((item) => item !== id) : [...serviceIds, id];
-    const normalized = applyCombos(next, services).slice(0, 5);
-    const combo = normalized.find((item) => !next.includes(item));
-    if (combo) {
-      const found = services.find((service) => service.id === combo);
-      const savings = comboSavings(combo, services);
-      setComboNotice(
-        found
-          ? `Juntamos no combo ${found.name}${savings ? `: você economiza ${formatMoney(savings)}` : ''}.`
-          : null,
-      );
-    } else if (!active) {
-      setComboNotice(null);
-    }
-    setServiceIds(normalized);
-  };
-
+  const services = useMemo(() => catalog.data?.services ?? [], [catalog.data]);
   const chosen = useMemo(
-    () => catalog.data?.services.filter((service) => serviceIds.includes(service.id)) ?? [],
-    [catalog.data, serviceIds],
+    () => services.filter((service) => serviceIds.includes(service.id)),
+    [services, serviceIds],
   );
+  const covered = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const service of chosen) {
+      for (const item of service.includes ?? []) {
+        map.set(item, service.name);
+      }
+    }
+    return map;
+  }, [chosen]);
   const total = chosen.reduce((sum, item) => sum + item.priceCents, 0);
   const duration = chosen.reduce((sum, item) => sum + item.durationMinutes, 0);
+  const savings = chosen.reduce((sum, item) => sum + comboSavings(item.id, services), 0);
   const barbers = catalog.data ? eligibleStaff(catalog.data.staff, unitId, serviceIds) : [];
+  const staffName =
+    staffId === ANY
+      ? 'Primeiro profissional livre'
+      : barbers.find((item) => item.id === staffId)?.name;
 
-  const finish = async ({ name }: { phone: string; name: string }) => {
-    if (!slot) {
+  const toggleService = (id: string) => {
+    const next = serviceIds.includes(id)
+      ? serviceIds.filter((item) => item !== id)
+      : [...serviceIds, id];
+    setServiceIds(applyCombos(next, services).slice(0, 5));
+    setSlot(null);
+  };
+
+  const slots = (availability.data?.slots ?? []).filter((item) => item.staff.length > 0);
+  const grouped = slots.reduce<Record<string, typeof slots>>((acc, item) => {
+    const [hours = 0, minutes = 0] = item.time.split(':').map(Number);
+    const key = period(hours * 60 + minutes);
+    acc[key] = [...(acc[key] ?? []), item];
+    return acc;
+  }, {});
+
+  const finish = async () => {
+    if (!slot || !customer) {
       return;
     }
     setFailure(null);
+    setConfirming(true);
     try {
       const hold = await publicApi<PublicBooking>(`${base}/bookings/holds`, {
         method: 'POST',
@@ -120,7 +187,7 @@ export function BookingFlow({
       });
       const confirmed = await publicApi<PublicBooking>(`${base}/bookings/${hold.id}/confirm`, {
         method: 'POST',
-        body: { name },
+        body: { name: customer.customer.name },
       });
       setBooking(confirmed);
       setStep('done');
@@ -131,10 +198,15 @@ export function BookingFlow({
       ) {
         setSlot(null);
         setStep('time');
-        setFailure('Esse horário acabou de ser ocupado. Escolha outro, por favor.');
-        return;
+        setFailure('Alguém acabou de pegar esse horário. Escolha outro, por favor.');
+      } else if (error instanceof ApiError && error.code === 'INVALID_CUSTOMER_TOKEN') {
+        clearCustomerSession(slug);
+        setFailure('Sua sessão expirou. Entre de novo para confirmar.');
+      } else {
+        setFailure(describeError(error));
       }
-      throw error;
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -142,337 +214,462 @@ export function BookingFlow({
     services: units.length > 1 ? 'unit' : undefined,
     staff: 'services',
     time: 'staff',
-    identify: 'time',
+    confirm: 'time',
   };
 
   const summary = (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-      {chosen.length ? <span>{chosen.map((item) => item.name).join(' + ')}</span> : null}
-      {duration ? (
-        <span className="inline-flex items-center gap-1">
-          <Clock className="size-3.5" aria-hidden /> {duration} min
-        </span>
+    <div className="flex flex-col gap-4">
+      <h2 className="font-[family-name:var(--font-sign)] text-2xl font-semibold">Seu horário</h2>
+      {chosen.length === 0 ? (
+        <p className="text-sm text-muted">
+          Escolha o que vai fazer e a gente monta o resto com você.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2 text-sm">
+          {chosen.map((item) => (
+            <li key={item.id} className="flex justify-between gap-3">
+              <span>{item.name}</span>
+              <span className="tabular-nums">{formatMoney(item.priceCents)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {staffName && step !== 'services' ? (
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <User className="size-4" aria-hidden /> {slot?.staffName ?? staffName}
+        </p>
       ) : null}
-      {total ? <span className="font-semibold text-foreground">{formatMoney(total)}</span> : null}
+      {slot ? (
+        <p className="flex items-center gap-2 text-sm text-muted first-letter:uppercase">
+          <Clock className="size-4" aria-hidden />
+          {LONG_DAY(timezone).format(new Date(slot.startsAt))},{' '}
+          {timeLabel(minuteOfDay(slot.startsAt, timezone))}
+        </p>
+      ) : null}
+      {chosen.length ? (
+        <div className="flex items-end justify-between border-t border-border pt-4">
+          <span className="text-sm text-muted">{duration} min</span>
+          <span className="text-right">
+            {savings ? (
+              <span className="block text-xs font-medium text-success">
+                Economia de {formatMoney(savings)}
+              </span>
+            ) : null}
+            <span className="text-xl font-semibold tabular-nums">{formatMoney(total)}</span>
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 
+  const nextAction =
+    step === 'services'
+      ? {
+          label: 'Escolher profissional',
+          disabled: serviceIds.length === 0,
+          go: () => setStep('staff'),
+        }
+      : step === 'time'
+        ? { label: 'Revisar e confirmar', disabled: !slot, go: () => setStep('confirm') }
+        : null;
+
   if (step === 'done' && booking) {
+    const when = new Date(booking.startsAt);
     return (
-      <div className="flex flex-col items-center gap-4 py-10 text-center">
-        <CheckCircle2 className="size-14 text-success" aria-hidden />
-        <h2 className="text-2xl font-semibold">Horário confirmado!</h2>
-        <p className="text-muted">
-          {new Intl.DateTimeFormat('pt-BR', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            timeZone: timezone,
-          }).format(new Date(booking.startsAt))}{' '}
-          às {timeLabel(minuteOfDay(booking.startsAt, timezone))} com {booking.staff.name}
-        </p>
-        <p className="text-sm">
-          {booking.items.map((item) => item.name).join(' + ')} ·{' '}
-          {formatMoney(booking.totalPriceCents)}
-        </p>
+      <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6 py-6 text-center">
+        <span className="grid size-20 place-items-center rounded-full bg-brand text-on-brand">
+          <Check className="size-10" strokeWidth={2.5} aria-hidden />
+        </span>
+        <div>
+          <h2 className="font-[family-name:var(--font-sign)] text-4xl font-bold">Tá marcado!</h2>
+          <p className="mt-2 text-muted">
+            Te esperamos {LONG_DAY(timezone).format(when)} às{' '}
+            {timeLabel(minuteOfDay(booking.startsAt, timezone))}.
+          </p>
+        </div>
+        <div className="w-full rounded-2xl border border-border bg-surface p-5 text-left">
+          <p className="font-medium">{booking.items.map((item) => item.name).join(' + ')}</p>
+          <p className="mt-1 text-sm text-muted">com {booking.staff.name}</p>
+          {unit && unitAddress(unit) ? (
+            <p className="mt-1 text-sm text-muted">{unitAddress(unit)}</p>
+          ) : null}
+          <p className="mt-3 text-lg font-semibold tabular-nums">
+            {formatMoney(booking.totalPriceCents)}
+          </p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:flex-row">
+          <a
+            href={calendarFile({
+              title: `${booking.items.map((item) => item.name).join(' + ')} – ${shopName}`,
+              start: booking.startsAt,
+              end: booking.endsAt,
+              location: unit ? unitAddress(unit) : '',
+            })}
+            download="horario.ics"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-medium hover:bg-surface-2 sm:flex-1"
+          >
+            <CalendarPlus className="size-4" aria-hidden /> Salvar na agenda do celular
+          </a>
+          <Link
+            href={`/b/${slug}/meus-horarios`}
+            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-medium text-on-brand hover:bg-brand/90 sm:flex-1"
+          >
+            Ver meus horários
+          </Link>
+        </div>
         <p className="text-sm text-muted">Você recebe um lembrete no WhatsApp antes do horário.</p>
-        <Link
-          href={`/b/${slug}/meus-horarios`}
-          className="text-sm font-medium text-brand-2 hover:underline"
-        >
-          Ver ou cancelar meus horários
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {back[step] ? (
-        <button
-          type="button"
-          onClick={() => setStep(back[step]!)}
-          className="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Voltar
-        </button>
-      ) : null}
+    <div className="grid gap-8 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex min-w-0 flex-col gap-6">
+        {step !== 'unit' ? <Stepper step={step} onJump={setStep} /> : null}
 
-      {step === 'unit' ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-semibold">Qual unidade?</h2>
-          {units.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                setUnitId(item.id);
-                setServiceIds([]);
-                setStep('services');
-              }}
-              className="rounded-xl border border-border bg-surface p-4 text-left hover:border-brand/50"
+        {back[step] ? (
+          <button
+            type="button"
+            onClick={() => setStep(back[step]!)}
+            className="-mb-2 inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" aria-hidden /> Voltar
+          </button>
+        ) : null}
+
+        {failure ? <Alert>{failure}</Alert> : null}
+
+        {step === 'unit' ? (
+          <section className="flex flex-col gap-4">
+            <h2 className="font-[family-name:var(--font-sign)] text-3xl font-semibold">
+              Em qual unidade?
+            </h2>
+            {units.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setUnitId(item.id);
+                  setServiceIds([]);
+                  setStep('services');
+                }}
+                className="rounded-2xl border border-border bg-surface p-5 text-left transition-colors hover:border-brand"
+              >
+                <span className="block text-lg font-semibold">{item.name}</span>
+                <span className="text-sm text-muted">{unitAddress(item)}</span>
+              </button>
+            ))}
+          </section>
+        ) : null}
+
+        {step === 'services' ? (
+          <section className="flex flex-col gap-6">
+            <h2 className="font-[family-name:var(--font-sign)] text-3xl font-semibold">
+              Bora dar um trato?
+            </h2>
+            {catalog.isPending ? <Skeleton className="h-64 rounded-2xl" /> : null}
+            {catalog.error ? <Alert>{describeError(catalog.error)}</Alert> : null}
+            {catalog.data
+              ? [...catalog.data.categories, { id: '', name: 'Outros' }].map((category) => {
+                  const items = services.filter(
+                    (service) => (service.categoryId ?? '') === category.id,
+                  );
+                  if (items.length === 0) {
+                    return null;
+                  }
+                  return (
+                    <div key={category.id || 'other'} className="flex flex-col gap-2">
+                      <h3 className="text-sm font-semibold text-muted">{category.name}</h3>
+                      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+                        {items.map((service, index) => {
+                          const active = serviceIds.includes(service.id);
+                          const inCombo = covered.get(service.id);
+                          const save = comboSavings(service.id, services);
+                          return (
+                            <button
+                              key={service.id}
+                              type="button"
+                              aria-pressed={active}
+                              disabled={Boolean(inCombo)}
+                              onClick={() => toggleService(service.id)}
+                              className={cn(
+                                'relative flex w-full items-center gap-4 px-5 py-4 text-left transition-colors',
+                                index > 0 && 'border-t border-border',
+                                active ? 'bg-brand/[0.06]' : 'enabled:hover:bg-surface-2',
+                                inCombo && 'cursor-not-allowed opacity-50',
+                              )}
+                            >
+                              <span
+                                aria-hidden
+                                className={cn(
+                                  'absolute inset-y-0 left-0 w-1 bg-brand transition-opacity',
+                                  active ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              <span
+                                aria-hidden
+                                className={cn(
+                                  'grid size-6 shrink-0 place-items-center rounded-full border-2 transition-colors',
+                                  active || inCombo
+                                    ? 'border-brand bg-brand text-on-brand'
+                                    : 'border-border',
+                                )}
+                              >
+                                {active || inCombo ? (
+                                  <Check className="size-3.5" strokeWidth={3} />
+                                ) : null}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="flex flex-wrap items-center gap-2">
+                                  <span className="font-medium">{service.name}</span>
+                                  {save > 0 ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-success/12 px-2 py-0.5 text-xs font-medium text-success">
+                                      <Sparkles className="size-3" aria-hidden /> economize{' '}
+                                      {formatMoney(save)}
+                                    </span>
+                                  ) : null}
+                                </span>
+                                <span className="block text-sm text-muted">
+                                  {inCombo
+                                    ? `Já incluso em ${inCombo}`
+                                    : (service.description ?? `${service.durationMinutes} min`)}
+                                </span>
+                              </span>
+                              <span className="text-right">
+                                <span className="block font-semibold tabular-nums">
+                                  {formatMoney(service.priceCents)}
+                                </span>
+                                {service.description ? (
+                                  <span className="text-xs text-muted">
+                                    {service.durationMinutes} min
+                                  </span>
+                                ) : null}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              : null}
+          </section>
+        ) : null}
+
+        {step === 'staff' ? (
+          <section className="flex flex-col gap-4">
+            <h2 className="font-[family-name:var(--font-sign)] text-3xl font-semibold">
+              Quem vai te atender?
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {[{ id: ANY, name: 'Tanto faz', photoUrl: null }, ...barbers].map((member) => (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => {
+                    setStaffId(member.id);
+                    setSlot(null);
+                    setStep('time');
+                  }}
+                  className={cn(
+                    'flex flex-col items-center gap-3 rounded-2xl border bg-surface px-3 py-5 text-center transition-colors hover:border-brand',
+                    staffId === member.id ? 'border-brand' : 'border-border',
+                  )}
+                >
+                  {member.photoUrl ? (
+                    <img
+                      src={member.photoUrl}
+                      alt=""
+                      className="size-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span
+                      className={cn(
+                        'grid size-16 place-items-center rounded-full font-[family-name:var(--font-sign)] text-2xl font-semibold',
+                        member.id === ANY ? 'bg-surface-2 text-muted' : 'bg-brand/12 text-brand',
+                      )}
+                    >
+                      {member.id === ANY ? (
+                        <Scissors className="size-6" aria-hidden />
+                      ) : (
+                        member.name.charAt(0)
+                      )}
+                    </span>
+                  )}
+                  <span className="font-medium">{member.name}</span>
+                  {member.id === ANY ? (
+                    <span className="-mt-2 text-xs text-muted">o primeiro livre</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {step === 'time' ? (
+          <section className="flex flex-col gap-5">
+            <h2 className="font-[family-name:var(--font-sign)] text-3xl font-semibold">
+              Qual dia fica bom?
+            </h2>
+            <div
+              className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2"
+              role="radiogroup"
+              aria-label="Dia"
             >
-              <span className="block font-medium">{item.name}</span>
-              <span className="text-sm text-muted">
-                {[item.street, item.number, item.district].filter(Boolean).join(', ')}
-              </span>
-            </button>
-          ))}
-        </section>
-      ) : null}
-
-      {step === 'services' ? (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">O que você vai fazer?</h2>
-          {comboNotice ? <Alert tone="success">{comboNotice}</Alert> : null}
-          {catalog.isPending ? <Skeleton className="h-48" /> : null}
-          {catalog.error ? <Alert>{describeError(catalog.error)}</Alert> : null}
-          {catalog.data
-            ? [...catalog.data.categories, { id: '', name: 'Outros' }].map((category) => {
-                const items = catalog.data.services.filter(
-                  (service) => (service.categoryId ?? '') === category.id,
-                );
-                if (items.length === 0) {
-                  return null;
-                }
+              {nextDays(today, 21).map((day) => {
+                const selected = day === date;
                 return (
-                  <div key={category.id || 'other'} className="flex flex-col gap-2">
-                    <h3 className="text-sm font-semibold text-muted">{category.name}</h3>
-                    {items.map((service) => {
-                      const active = serviceIds.includes(service.id);
+                  <button
+                    key={day}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => {
+                      setDate(day);
+                      setSlot(null);
+                    }}
+                    className={cn(
+                      'flex w-16 shrink-0 snap-start flex-col items-center gap-0.5 rounded-2xl border py-3 transition-colors',
+                      selected
+                        ? 'border-brand bg-brand text-on-brand'
+                        : 'border-border bg-surface hover:border-brand',
+                    )}
+                  >
+                    <span className="text-xs opacity-80">
+                      {day === today ? 'Hoje' : WEEKDAYS_SHORT[weekdayOf(day)]}
+                    </span>
+                    <span className="font-[family-name:var(--font-sign)] text-2xl leading-none font-semibold">
+                      {Number(day.slice(8))}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {availability.isPending ? <Skeleton className="h-40 rounded-2xl" /> : null}
+            {availability.error ? <Alert>{describeError(availability.error)}</Alert> : null}
+            {availability.data && slots.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+                <p className="font-medium">Agenda cheia nesse dia</p>
+                <p className="mt-1 text-sm text-muted">
+                  Toca em outro dia ali em cima que a gente acha um horário.
+                </p>
+              </div>
+            ) : null}
+            {['Manhã', 'Tarde', 'Noite'].map((label) =>
+              grouped[label]?.length ? (
+                <div
+                  key={label}
+                  className="flex flex-col gap-2"
+                  role="radiogroup"
+                  aria-label={label}
+                >
+                  <h3 className="text-sm font-semibold text-muted">{label}</h3>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                    {grouped[label].map((item) => {
+                      const selected = slot?.startsAt === item.startsAt;
+                      const first = item.staff[0]!;
                       return (
                         <button
-                          key={service.id}
+                          key={item.startsAt}
                           type="button"
-                          aria-pressed={active}
-                          onClick={() => toggleService(service.id, active)}
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() =>
+                            setSlot({
+                              startsAt: item.startsAt,
+                              staffId: first.id,
+                              staffName: first.name,
+                            })
+                          }
                           className={cn(
-                            'flex items-center gap-3 rounded-xl border p-4 text-left transition-colors',
-                            active
-                              ? 'border-brand bg-brand/8'
-                              : 'border-border bg-surface hover:border-brand/40',
+                            'rounded-xl border py-3 text-sm font-semibold tabular-nums transition-colors',
+                            selected
+                              ? 'border-brand bg-brand text-on-brand'
+                              : 'border-border bg-surface hover:border-brand',
                           )}
                         >
-                          <span
-                            className={cn(
-                              'grid size-5 shrink-0 place-items-center rounded-md border',
-                              active ? 'border-brand bg-brand text-on-brand' : 'border-border',
-                            )}
-                            aria-hidden
-                          >
-                            {active ? <Check className="size-3.5" /> : null}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block font-medium">{service.name}</span>
-                            {service.description ? (
-                              <span className="block text-sm text-muted">
-                                {service.description}
-                              </span>
-                            ) : null}
-                            <span className="text-xs text-muted">
-                              {service.durationMinutes} min
-                            </span>
-                          </span>
-                          <span className="font-semibold tabular-nums">
-                            {formatMoney(service.priceCents)}
-                          </span>
+                          {item.time}
                         </button>
                       );
                     })}
                   </div>
-                );
-              })
-            : null}
-        </section>
-      ) : null}
+                </div>
+              ) : null,
+            )}
+          </section>
+        ) : null}
 
-      {step === 'staff' ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-semibold">Com quem?</h2>
-          {summary}
-          {[{ id: ANY, name: 'Qualquer profissional', photoUrl: null }, ...barbers].map(
-            (member) => (
-              <button
-                key={member.id}
-                type="button"
-                onClick={() => {
-                  setStaffId(member.id);
-                  setSlot(null);
-                  setStep('time');
-                }}
-                className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 text-left hover:border-brand/50"
-              >
-                {member.photoUrl ? (
-                  <img src={member.photoUrl} alt="" className="size-11 rounded-full object-cover" />
-                ) : (
-                  <span className="grid size-11 place-items-center rounded-full bg-brand/12 font-semibold text-brand">
-                    {member.id === ANY ? (
-                      <User className="size-5" aria-hidden />
-                    ) : (
-                      member.name.charAt(0)
-                    )}
-                  </span>
-                )}
-                <span className="font-medium">{member.name}</span>
-              </button>
-            ),
-          )}
-        </section>
-      ) : null}
-
-      {step === 'time' ? (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">Quando?</h2>
-          {summary}
-          {failure ? <Alert>{failure}</Alert> : null}
-          <div
-            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-            role="radiogroup"
-            aria-label="Dia"
-          >
-            {nextDays(today, 21).map((day) => (
-              <button
-                key={day}
-                type="button"
-                role="radio"
-                aria-checked={day === date}
-                onClick={() => {
-                  setDate(day);
-                  setSlot(null);
-                }}
-                className={cn(
-                  'flex w-14 shrink-0 flex-col items-center rounded-xl border py-2 text-sm',
-                  day === date ? 'border-brand bg-brand text-on-brand' : 'border-border bg-surface',
-                )}
-              >
-                <span className="text-[11px] uppercase opacity-80">
-                  {day === today ? 'Hoje' : WEEKDAYS_SHORT[weekdayOf(day)]}
-                </span>
-                <span className="font-display text-lg font-semibold">{day.slice(8)}</span>
-              </button>
-            ))}
-          </div>
-          {availability.isPending ? <Skeleton className="h-32" /> : null}
-          {availability.error ? <Alert>{describeError(availability.error)}</Alert> : null}
-          {availability.data ? (
-            availability.data.slots.filter((item) => item.staff.length).length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted">
-                Sem horários nesse dia. Tente outro.
-              </p>
-            ) : (
-              <div
-                className="grid grid-cols-4 gap-2 sm:grid-cols-5"
-                role="radiogroup"
-                aria-label="Horário"
-              >
-                {availability.data.slots
-                  .filter((item) => item.staff.length)
-                  .map((item) => {
-                    const selected = slot?.startsAt === item.startsAt;
-                    const first = item.staff[0]!;
-                    return (
-                      <button
-                        key={item.startsAt}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        onClick={() =>
-                          setSlot({
-                            startsAt: item.startsAt,
-                            staffId: first.id,
-                            staffName: first.name,
-                          })
-                        }
-                        className={cn(
-                          'rounded-lg border py-2.5 text-sm font-medium tabular-nums',
-                          selected
-                            ? 'border-brand bg-brand text-on-brand'
-                            : 'border-border bg-surface hover:border-brand/50',
-                        )}
-                      >
-                        {item.time}
-                      </button>
-                    );
-                  })}
-              </div>
-            )
-          ) : null}
-        </section>
-      ) : null}
-
-      {step === 'identify' && slot ? (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">Quase lá</h2>
-          <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-            <p className="font-medium">
-              {new Intl.DateTimeFormat('pt-BR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                timeZone: timezone,
-              }).format(new Date(slot.startsAt))}{' '}
-              às {timeLabel(minuteOfDay(slot.startsAt, timezone))} com {slot.staffName}
-            </p>
-            {summary}
-          </div>
-          {failure ? <Alert>{failure}</Alert> : null}
-          {customer ? (
-            <div className="flex flex-col gap-3">
-              <p className="flex items-center justify-between text-sm text-muted">
-                <span>
-                  Agendando como{' '}
-                  <strong className="text-foreground">{customer.customer.name}</strong>
-                </span>
+        {step === 'confirm' && slot ? (
+          <section className="flex flex-col gap-5">
+            <h2 className="font-[family-name:var(--font-sign)] text-3xl font-semibold">
+              {customer ? `Tudo certo, ${customer.customer.name.split(' ')[0]}?` : 'Falta só você'}
+            </h2>
+            <div className="lg:hidden">
+              <div className="rounded-2xl border border-border bg-surface p-5">{summary}</div>
+            </div>
+            {customer ? (
+              <div className="flex flex-col gap-3">
+                <Button
+                  size="lg"
+                  className="h-14 rounded-xl text-base"
+                  loading={confirming}
+                  onClick={() => void finish()}
+                >
+                  Confirmar horário
+                </Button>
                 <button
                   type="button"
-                  className="hover:text-foreground"
+                  className="text-sm text-muted hover:text-foreground"
                   onClick={() => clearCustomerSession(slug)}
                 >
-                  Não é você?
+                  Não é {customer.customer.name.split(' ')[0]}? Trocar de conta
                 </button>
-              </p>
-              <Button
-                size="lg"
-                loading={confirming}
-                onClick={async () => {
-                  setConfirming(true);
-                  try {
-                    await finish({ name: customer.customer.name, phone: customer.customer.phone });
-                  } catch (error) {
-                    setFailure(describeError(error));
-                  } finally {
-                    setConfirming(false);
-                  }
-                }}
-              >
-                Confirmar horário
-              </Button>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-muted">Entre ou crie sua conta para confirmar.</p>
-              <AccountAccess slug={slug} />
-            </>
-          )}
-        </section>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+                <AccountAccess slug={slug} />
+              </div>
+            )}
+          </section>
+        ) : null}
+      </div>
+
+      {step !== 'unit' ? (
+        <aside className="sticky top-6 hidden rounded-2xl border border-border bg-surface p-6 lg:block">
+          {summary}
+          {nextAction ? (
+            <Button
+              size="lg"
+              className="mt-6 h-12 w-full rounded-xl"
+              disabled={nextAction.disabled}
+              onClick={nextAction.go}
+            >
+              {nextAction.label}
+            </Button>
+          ) : null}
+        </aside>
       ) : null}
 
-      {step === 'services' || step === 'time' ? (
-        <div className="sticky bottom-0 -mx-5 border-t border-border bg-background/95 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
-          <Button
-            size="lg"
-            className="w-full"
-            disabled={step === 'services' ? serviceIds.length === 0 : !slot}
-            onClick={() => setStep(step === 'services' ? 'staff' : 'identify')}
-          >
-            {step === 'services'
-              ? serviceIds.length
-                ? `Continuar · ${formatMoney(total)}`
-                : 'Escolha um serviço'
-              : slot
-                ? `Continuar · ${timeLabel(minuteOfDay(slot.startsAt, timezone))}`
-                : 'Escolha um horário'}
-          </Button>
+      {nextAction ? (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-xl items-center gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-muted">
+                {chosen.length
+                  ? `${chosen.length} ${chosen.length === 1 ? 'serviço' : 'serviços'}, ${duration} min`
+                  : 'Nada escolhido ainda'}
+              </p>
+              <p className="text-lg font-semibold tabular-nums">{formatMoney(total)}</p>
+            </div>
+            <Button
+              size="lg"
+              className="h-12 rounded-xl"
+              disabled={nextAction.disabled}
+              onClick={nextAction.go}
+            >
+              {step === 'services' ? 'Continuar' : 'Revisar'}
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

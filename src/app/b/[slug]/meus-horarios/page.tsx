@@ -16,10 +16,10 @@ export default async function MyBookingsPage({ params }: Props) {
     notFound();
   }
   return (
-    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 px-5 py-6">
+    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 px-5 py-5">
       <TenantHeader branding={branding} />
       <div>
-        <h1 className="text-2xl font-semibold">Meus horários</h1>
+        <h1 className="font-[family-name:var(--font-sign)] text-4xl font-bold">Meus horários</h1>
         <p className="text-sm text-muted">Entre na sua conta para ver e cancelar seus horários.</p>
       </div>
       <MyBookings
