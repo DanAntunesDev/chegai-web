@@ -35,7 +35,7 @@ export function BrandPreview({
           {logo ? (
             <img src={logo} alt="" className="h-9 w-auto max-w-36 object-contain" />
           ) : (
-            <span className="grid size-9 place-items-center rounded-lg bg-brand font-display font-bold text-on-brand">
+            <span className="grid size-9 place-items-center rounded-lg bg-brand font-display font-semibold text-on-brand">
               {name.charAt(0) || 'B'}
             </span>
           )}

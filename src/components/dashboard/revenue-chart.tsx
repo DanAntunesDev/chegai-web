@@ -26,7 +26,15 @@ function niceMax(value: number) {
   return step * magnitude;
 }
 
-export function RevenueChart({ days, today }: { days: DayPoint[]; today: string }) {
+export function RevenueChart({
+  days,
+  today,
+  title = 'Faturamento por dia',
+}: {
+  days: DayPoint[];
+  today: string;
+  title?: string;
+}) {
   const [active, setActive] = useState<number | null>(null);
   const max = niceMax(Math.max(...days.map((day) => day.revenueCents), 0));
   const ticks = [max, max / 2, 0];
@@ -35,7 +43,7 @@ export function RevenueChart({ days, today }: { days: DayPoint[]; today: string 
   return (
     <figure className="flex flex-col gap-3">
       <figcaption className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-semibold">Faturamento por dia</span>
+        <span className="text-sm font-semibold">{title}</span>
         <span className="text-xs text-muted" aria-live="polite">
           {focused
             ? `${DAY.format(new Date(`${focused.date}T12:00:00Z`))} · ${formatMoney(focused.revenueCents)} · ${focused.completedBookings} atendimentos`
@@ -83,9 +91,9 @@ export function RevenueChart({ days, today }: { days: DayPoint[]; today: string 
                   <span
                     className={cn(
                       'block w-full rounded-t-[4px] transition-colors',
-                      isFuture ? 'bg-surface-2' : 'bg-brand-2/75',
-                      active === index && 'bg-brand-2',
-                      'group-focus-visible:ring-2 group-focus-visible:ring-brand-2',
+                      isFuture ? 'bg-surface-2' : 'bg-foreground/70',
+                      active === index && 'bg-foreground',
+                      'group-focus-visible:ring-2 group-focus-visible:ring-foreground',
                     )}
                     style={{ height: `${Math.max(height, day.revenueCents > 0 ? 2 : 0)}%` }}
                   />

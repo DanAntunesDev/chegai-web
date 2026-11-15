@@ -27,7 +27,7 @@ export function StaffRanking({ staff }: { staff: StaffPoint[] }) {
             </div>
             <div className="h-2 rounded-full bg-surface-2" aria-hidden>
               <div
-                className="h-2 rounded-full bg-brand-2/80"
+                className="h-2 rounded-full bg-foreground/70"
                 style={{ width: `${(item.revenueCents / max) * 100}%` }}
               />
             </div>

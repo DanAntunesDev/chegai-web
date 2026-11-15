@@ -44,7 +44,7 @@ export default async function TenantHome({ params }: { params: Promise<{ slug: s
               />
             </>
           ) : (
-            <span className="grid size-10 place-items-center rounded-xl bg-brand font-display text-lg font-bold text-on-brand">
+            <span className="grid size-10 place-items-center rounded-xl bg-brand font-display text-lg font-semibold text-on-brand">
               {branding.displayName.charAt(0)}
             </span>
           )}
@@ -53,7 +53,7 @@ export default async function TenantHome({ params }: { params: Promise<{ slug: s
       </header>
 
       <section className="py-10">
-        <h1 className="text-3xl font-bold sm:text-4xl">{branding.displayName}</h1>
+        <h1 className="text-3xl font-semibold sm:text-4xl">{branding.displayName}</h1>
         <p className="mt-2 text-muted">Escolha a unidade e agende seu horário.</p>
       </section>
 

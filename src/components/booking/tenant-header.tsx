@@ -21,7 +21,7 @@ export function TenantHeader({ branding }: { branding: PublicBranding }) {
           </>
         ) : (
           <>
-            <span className="grid size-10 place-items-center rounded-xl bg-brand font-display text-lg font-bold text-on-brand">
+            <span className="grid size-10 place-items-center rounded-xl bg-brand font-display text-lg font-semibold text-on-brand">
               {branding.displayName.charAt(0)}
             </span>
             <span className="font-display font-semibold">{branding.displayName}</span>

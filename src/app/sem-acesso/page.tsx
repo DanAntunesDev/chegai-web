@@ -12,7 +12,7 @@ export default function NoAccessPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
       <Logo />
-      <h1 className="text-2xl font-bold">Sua conta ainda não tem uma barbearia</h1>
+      <h1 className="text-2xl font-semibold">Sua conta ainda não tem uma barbearia</h1>
       <p className="text-sm text-muted">
         Peça ao responsável pela barbearia para enviar um convite para o seu e-mail.
       </p>

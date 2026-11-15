@@ -50,7 +50,7 @@ export default function TeamPage() {
                 href={`/painel/equipe/${member.id}`}
                 className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 hover:border-brand/40"
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand/12 font-display font-bold text-brand">
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-2 font-semibold text-foreground">
                   {member.name.charAt(0)}
                 </span>
                 <span className="min-w-0 flex-1">

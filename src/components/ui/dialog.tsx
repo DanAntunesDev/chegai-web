@@ -53,7 +53,7 @@ export function Dialog({
         }
       }}
       className={cn(
-        'm-0 mt-auto max-h-[92dvh] w-full max-w-none rounded-t-2xl border border-border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-sm sm:m-auto sm:rounded-2xl',
+        'm-0 mt-auto max-h-[92dvh] w-full max-w-none rounded-t-2xl border border-border bg-surface p-0 text-foreground shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-sm sm:m-auto sm:rounded-2xl',
         size === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-lg',
       )}
     >
