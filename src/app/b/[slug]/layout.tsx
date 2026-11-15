@@ -1,3 +1,5 @@
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { CSSProperties, ReactNode } from 'react';
@@ -39,7 +41,7 @@ export default async function TenantLayout({
     <div
       data-brand
       style={brandVariables(branding.primaryColor, branding.secondaryColor) as CSSProperties}
-      className="min-h-dvh bg-background text-foreground"
+      className="public min-h-dvh bg-background text-foreground"
     >
       {children}
     </div>

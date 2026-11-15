@@ -1,23 +1,15 @@
 import { CalendarClock, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Card } from '@/components/ui/card';
-import { fetchBranding, fetchProfile } from '@/lib/server/public-api';
-
-function address(unit: {
-  street: string | null;
-  number: string | null;
-  district: string | null;
-  city: string | null;
-  state: string | null;
-}) {
-  const line = [unit.street, unit.number].filter(Boolean).join(', ');
-  const place = [unit.district, unit.city && unit.state ? `${unit.city}/${unit.state}` : unit.city]
-    .filter(Boolean)
-    .join(' · ');
-  return [line, place].filter(Boolean).join(' — ');
-}
+import {
+  PoweredBy,
+  TenantHeader,
+  TenantHero,
+  unitAddress,
+} from '@/components/booking/tenant-header';
+import { formatPhone } from '@/lib/phone';
+import { formatMoney } from '@/lib/format';
+import { fetchBranding, fetchCatalog, fetchProfile } from '@/lib/server/public-api';
 
 export default async function TenantHome({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -25,77 +17,104 @@ export default async function TenantHome({ params }: { params: Promise<{ slug: s
   if (!branding) {
     notFound();
   }
+  const units = profile?.units ?? [];
+  const catalog = await fetchCatalog(slug, units.length === 1 ? units[0]?.id : undefined);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {branding.logoUrl ? (
-            <>
-              <img
-                src={branding.logoUrl}
-                alt={branding.displayName}
-                className="h-10 w-auto dark:hidden"
-              />
-              <img
-                src={branding.logoDarkUrl ?? branding.logoUrl}
-                alt={branding.displayName}
-                className="hidden h-10 w-auto dark:block"
-              />
-            </>
-          ) : (
-            <span className="grid size-10 place-items-center rounded-xl bg-brand font-display text-lg font-semibold text-on-brand">
-              {branding.displayName.charAt(0)}
-            </span>
-          )}
-        </div>
-        <ThemeToggle />
-      </header>
+    <div className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 px-5 py-5">
+      <TenantHeader branding={branding} />
+      <TenantHero branding={branding} unit={units.length === 1 ? units[0] : undefined} />
 
-      <section className="py-10">
-        <h1 className="text-3xl font-semibold sm:text-4xl">{branding.displayName}</h1>
-        <p className="mt-2 text-muted">Escolha a unidade e agende seu horário.</p>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        {(profile?.units ?? []).map((unit) => (
-          <Card key={unit.id} className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold">{unit.name}</h2>
-            {address(unit) ? (
-              <p className="flex items-start gap-2 text-sm text-muted">
-                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
-                {address(unit)}
-              </p>
-            ) : null}
-            {unit.phone ? (
-              <p className="flex items-center gap-2 text-sm text-muted">
-                <Phone className="size-4" aria-hidden />
-                {unit.phone}
-              </p>
-            ) : null}
+      {units.length === 1 && units[0] ? (
+        <Link
+          href={`/b/${branding.slug}/agendar?unidade=${units[0].id}`}
+          className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-foreground text-lg font-semibold text-background hover:opacity-90"
+        >
+          <CalendarClock className="size-5" aria-hidden /> Agendar meu horário
+        </Link>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-[family-name:var(--font-sign)] text-2xl font-semibold">
+            Escolha a unidade
+          </h2>
+          {units.map((unit) => (
             <Link
+              key={unit.id}
               href={`/b/${branding.slug}/agendar?unidade=${unit.id}`}
-              className="inline-flex w-fit items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-brand/90"
+              className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-5 hover:border-brand"
             >
-              <CalendarClock className="size-4" aria-hidden />
-              Agendar horário
+              <span>
+                <span className="block text-lg font-semibold">{unit.name}</span>
+                {unitAddress(unit) ? (
+                  <span className="flex items-start gap-1.5 text-sm text-muted">
+                    <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {unitAddress(unit)}
+                  </span>
+                ) : null}
+              </span>
+              <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-on-brand">
+                Agendar
+              </span>
             </Link>
-          </Card>
-        ))}
-      </section>
+          ))}
+        </section>
+      )}
 
-      <Link
-        href={`/b/${branding.slug}/meus-horarios`}
-        className="mt-6 text-center text-sm font-medium text-brand-2 hover:underline"
-      >
-        Ver ou cancelar meus horários
-      </Link>
-
-      {branding.showPoweredBy ? (
-        <footer className="mt-auto pt-12 text-center text-xs text-muted">
-          Agenda por <span className="font-semibold text-foreground">Chegaí</span>
-        </footer>
+      {units.length === 1 && units[0]?.phone ? (
+        <a
+          href={`tel:${units[0].phone}`}
+          className="flex items-center justify-center gap-2 text-sm text-muted hover:text-foreground"
+        >
+          <Phone className="size-4" aria-hidden /> {formatPhone(units[0].phone)}
+        </a>
       ) : null}
+
+      {catalog && catalog.services.length ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-[family-name:var(--font-sign)] text-2xl font-semibold">
+            Serviços e preços
+          </h2>
+          <ul className="overflow-hidden rounded-2xl border border-border bg-surface">
+            {catalog.services.map((service, index) => (
+              <li
+                key={service.id}
+                className={`flex items-center justify-between gap-4 px-5 py-3.5 ${index > 0 ? 'border-t border-border' : ''}`}
+              >
+                <span>
+                  <span className="block font-medium">{service.name}</span>
+                  <span className="text-sm text-muted">{service.durationMinutes} min</span>
+                </span>
+                <span className="font-semibold tabular-nums">
+                  {formatMoney(service.priceCents)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {catalog && catalog.staff.length ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-[family-name:var(--font-sign)] text-2xl font-semibold">
+            Quem vai te atender
+          </h2>
+          <ul className="flex flex-wrap gap-4">
+            {catalog.staff.map((member) => (
+              <li key={member.id} className="flex w-20 flex-col items-center gap-2 text-center">
+                {member.photoUrl ? (
+                  <img src={member.photoUrl} alt="" className="size-16 rounded-full object-cover" />
+                ) : (
+                  <span className="grid size-16 place-items-center rounded-full bg-brand/12 font-[family-name:var(--font-sign)] text-2xl font-semibold text-brand">
+                    {member.name.charAt(0)}
+                  </span>
+                )}
+                <span className="text-sm font-medium">{member.name}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <PoweredBy show={branding.showPoweredBy} />
     </div>
   );
 }
