@@ -62,3 +62,9 @@ export function publicPath(slug: string, pathname: string): string {
   }
   return pathname === '/' ? prefix : `${prefix}${pathname}`;
 }
+
+const STAFF_ON_TENANT_HOST = /^\/(barbearia|login\/barbearia)(\/|$)/;
+
+export function servesStaffOnTenantHost(pathname: string): boolean {
+  return STAFF_ON_TENANT_HOST.test(pathname);
+}

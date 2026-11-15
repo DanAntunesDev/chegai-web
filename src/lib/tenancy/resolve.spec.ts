@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseConfig, publicPath, resolveTarget } from './resolve';
+import { parseConfig, publicPath, resolveTarget, servesStaffOnTenantHost } from './resolve';
 
 const config = parseConfig('localhost,app.chegai.com.br', 'chegai.com.br');
 
@@ -50,5 +50,21 @@ describe('publicPath', () => {
     expect(publicPath('ze', '/')).toBe('/b/ze');
     expect(publicPath('ze', '/agendar')).toBe('/b/ze/agendar');
     expect(publicPath('ze', '/b/ze/manifest.webmanifest')).toBe('/b/ze/manifest.webmanifest');
+  });
+});
+
+describe('barbershop address', () => {
+  it('keeps the panel and its login on the barbershop host', () => {
+    expect(servesStaffOnTenantHost('/barbearia')).toBe(true);
+    expect(servesStaffOnTenantHost('/barbearia/agenda')).toBe(true);
+    expect(servesStaffOnTenantHost('/login/barbearia')).toBe(true);
+    expect(servesStaffOnTenantHost('/login/cliente')).toBe(false);
+    expect(servesStaffOnTenantHost('/barbearias')).toBe(false);
+    expect(servesStaffOnTenantHost('/admin')).toBe(false);
+  });
+
+  it('maps the customer login to the barbershop pages', () => {
+    expect(publicPath('joaodocorte', '/login/cliente')).toBe('/b/joaodocorte/login/cliente');
+    expect(publicPath('joaodocorte', '/cliente')).toBe('/b/joaodocorte/cliente');
   });
 });

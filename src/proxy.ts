@@ -1,6 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { TtlCache } from './lib/tenancy/domain-cache';
-import { isValidSlug, parseConfig, publicPath, resolveTarget } from './lib/tenancy/resolve';
+import {
+  isValidSlug,
+  parseConfig,
+  publicPath,
+  resolveTarget,
+  servesStaffOnTenantHost,
+} from './lib/tenancy/resolve';
 
 const devHosts =
   process.env.NODE_ENV === 'production'
@@ -46,7 +52,14 @@ export async function proxy(request: NextRequest) {
     return new NextResponse('Barbearia não encontrada', { status: 404 });
   }
 
+  if (servesStaffOnTenantHost(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
   const url = request.nextUrl.clone();
+  if (url.pathname === '/login') {
+    url.pathname = '/login/cliente';
+    return NextResponse.redirect(url);
+  }
   url.pathname = publicPath(slug, url.pathname);
   return NextResponse.rewrite(url);
 }
