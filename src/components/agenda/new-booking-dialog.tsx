@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { describeError } from '@/lib/api/errors';
 import { cn } from '@/lib/cn';
+import { applyCombos } from '@/lib/combos';
 import { formatMoney } from '@/lib/format';
 import { useCreateBooking, useCustomers, useServices } from '@/lib/panel/queries';
 import type { Customer, Staff } from '@/lib/panel/types';
@@ -108,7 +109,12 @@ export function NewBookingDialog({
     >
       <form id="booking-form" onSubmit={submit} noValidate className="flex flex-col gap-5">
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1.5 text-sm font-medium">Serviços</legend>
+          <legend className="mb-1.5 text-sm font-medium">
+            Serviços
+            <span className="ml-0.5 text-danger" aria-hidden>
+              *
+            </span>
+          </legend>
           <div className="flex flex-wrap gap-2">
             {services.data
               ?.filter((service) => service.isActive)
@@ -122,9 +128,12 @@ export function NewBookingDialog({
                     onClick={() => {
                       resetSlot();
                       setServiceIds((current) =>
-                        active
-                          ? current.filter((id) => id !== service.id)
-                          : [...current, service.id].slice(0, 5),
+                        applyCombos(
+                          active
+                            ? current.filter((id) => id !== service.id)
+                            : [...current, service.id],
+                          services.data ?? [],
+                        ).slice(0, 5),
                       );
                     }}
                     className={cn(
@@ -142,7 +151,7 @@ export function NewBookingDialog({
         </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Dia" htmlFor="booking-date">
+          <Field label="Dia" htmlFor="booking-date" required>
             <Input
               id="booking-date"
               type="date"
@@ -173,7 +182,12 @@ export function NewBookingDialog({
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Horário</span>
+          <span className="text-sm font-medium">
+            Horário
+            <span className="ml-0.5 text-danger" aria-hidden>
+              *
+            </span>
+          </span>
           <SlotPicker
             unitId={unitId}
             date={date}
@@ -186,7 +200,12 @@ export function NewBookingDialog({
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Cliente</span>
+            <span className="text-sm font-medium">
+              Cliente
+              <span className="ml-0.5 text-danger" aria-hidden>
+                *
+              </span>
+            </span>
             <Button
               variant="ghost"
               size="sm"

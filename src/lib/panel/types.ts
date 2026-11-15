@@ -77,6 +77,7 @@ export interface Service {
   position: number;
   isActive: boolean;
   category: { id: string; name: string } | null;
+  includes: string[];
 }
 
 export interface Customer {

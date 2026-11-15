@@ -50,7 +50,7 @@ export default function ServicesPage() {
   return (
     <>
       <PageHeader
-        title="Serviços"
+        title="Serviços e combos"
         description="O que a barbearia oferece, com preço e duração."
         actions={
           <>
@@ -86,6 +86,15 @@ export default function ServicesPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{service.name}</span>
                         {service.isActive ? null : <Badge>Pausado</Badge>}
+                        {service.includes.length ? (
+                          <Badge tone="info">
+                            Combo:{' '}
+                            {service.includes
+                              .map((id) => services.data?.find((item) => item.id === id)?.name)
+                              .filter(Boolean)
+                              .join(' + ')}
+                          </Badge>
+                        ) : null}
                       </div>
                       <p className="flex items-center gap-1 text-xs text-muted">
                         <Clock className="size-3.5" aria-hidden /> {service.durationMinutes} min
@@ -117,6 +126,7 @@ export default function ServicesPage() {
         <ServiceDialog
           key={editing?.id ?? 'new'}
           service={editing}
+          services={services.data ?? []}
           categories={categories.data ?? []}
           open={open}
           onClose={() => setOpen(false)}

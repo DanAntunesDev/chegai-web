@@ -10,12 +10,13 @@ import { Select } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { describeError, serverFieldErrors } from '@/lib/api/errors';
-import { centsFromInput } from '@/lib/format';
+import { centsFromInput, formatMoney } from '@/lib/format';
 import { useSaveService } from '@/lib/panel/queries';
 import type { Category, Service } from '@/lib/panel/types';
 
 interface ServiceDialogProps {
   service: Service | null;
+  services: Service[];
   categories: Category[];
   open: boolean;
   onClose: () => void;
@@ -25,7 +26,13 @@ function priceText(cents: number | undefined) {
   return cents === undefined ? '' : (cents / 100).toFixed(2).replace('.', ',');
 }
 
-export function ServiceDialog({ service, categories, open, onClose }: ServiceDialogProps) {
+export function ServiceDialog({
+  service,
+  services,
+  categories,
+  open,
+  onClose,
+}: ServiceDialogProps) {
   const save = useSaveService();
   const [name, setName] = useState(service?.name ?? '');
   const [categoryId, setCategoryId] = useState(service?.categoryId ?? '');
@@ -34,6 +41,19 @@ export function ServiceDialog({ service, categories, open, onClose }: ServiceDia
   const [buffer, setBuffer] = useState(String(service?.bufferMinutes ?? 0));
   const [description, setDescription] = useState(service?.description ?? '');
   const [active, setActive] = useState(service?.isActive ?? true);
+  const [isCombo, setIsCombo] = useState((service?.includes.length ?? 0) > 0);
+  const [includes, setIncludes] = useState<string[]>(service?.includes ?? []);
+  const candidates = services.filter(
+    (item) => item.id !== service?.id && item.includes.length === 0 && item.isActive,
+  );
+  const separateCents = includes.reduce(
+    (sum, id) => sum + (services.find((item) => item.id === id)?.priceCents ?? 0),
+    0,
+  );
+  const separateMinutes = includes.reduce(
+    (sum, id) => sum + (services.find((item) => item.id === id)?.durationMinutes ?? 0),
+    0,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -54,6 +74,9 @@ export function ServiceDialog({ service, categories, open, onClose }: ServiceDia
     if (!Number.isInteger(bufferMinutes) || bufferMinutes < 0 || bufferMinutes > 120) {
       local.buffer = 'Entre 0 e 120 minutos.';
     }
+    if (isCombo && includes.length < 2) {
+      local.includes = 'Escolha pelo menos dois serviços.';
+    }
     setErrors(local);
     if (Object.keys(local).length || priceCents === null) {
       return;
@@ -69,6 +92,7 @@ export function ServiceDialog({ service, categories, open, onClose }: ServiceDia
           bufferMinutes,
           description: description.trim() || null,
           isActive: active,
+          includes: isCombo ? includes : [],
         },
       },
       { onSuccess: onClose, onError: (error) => setErrors(serverFieldErrors(error)) },
@@ -92,7 +116,13 @@ export function ServiceDialog({ service, categories, open, onClose }: ServiceDia
       }
     >
       <form id="service-form" onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nome" htmlFor="service-name" error={errors.name} className="sm:col-span-2">
+        <Field
+          label="Nome"
+          htmlFor="service-name"
+          error={errors.name}
+          className="sm:col-span-2"
+          required
+        >
           <Input
             id="service-name"
             value={name}
@@ -114,7 +144,7 @@ export function ServiceDialog({ service, categories, open, onClose }: ServiceDia
             ))}
           </Select>
         </Field>
-        <Field label="Preço (R$)" htmlFor="service-price" error={errors.price}>
+        <Field label="Preço (R$)" htmlFor="service-price" error={errors.price} required>
           <Input
             id="service-price"
             inputMode="decimal"
@@ -124,7 +154,7 @@ export function ServiceDialog({ service, categories, open, onClose }: ServiceDia
             onChange={(event) => setPrice(event.target.value)}
           />
         </Field>
-        <Field label="Duração (min)" htmlFor="service-duration" error={errors.duration}>
+        <Field label="Duração (min)" htmlFor="service-duration" error={errors.duration} required>
           <Input
             id="service-duration"
             type="number"
@@ -160,6 +190,60 @@ export function ServiceDialog({ service, categories, open, onClose }: ServiceDia
             onChange={(event) => setDescription(event.target.value)}
           />
         </Field>
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:col-span-2">
+          <Switch
+            id="service-combo"
+            label="É um combo"
+            description="Quando o cliente escolher esses serviços juntos, cobra o preço deste combo."
+            checked={isCombo}
+            onCheckedChange={(checked) => {
+              setIsCombo(checked);
+              if (checked && name.trim() === '' && includes.length) {
+                setName(
+                  includes.map((id) => services.find((item) => item.id === id)?.name).join(' + '),
+                );
+              }
+            }}
+          />
+          {isCombo ? (
+            <>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Serviços do combo">
+                {candidates.map((item) => {
+                  const checked = includes.includes(item.id);
+                  return (
+                    <label
+                      key={item.id}
+                      className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${checked ? 'border-foreground bg-surface-2' : 'border-border'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-3.5 accent-[var(--brand)]"
+                        checked={checked}
+                        onChange={(event) =>
+                          setIncludes((current) =>
+                            event.target.checked
+                              ? [...current, item.id]
+                              : current.filter((id) => id !== item.id),
+                          )
+                        }
+                      />
+                      {item.name}
+                    </label>
+                  );
+                })}
+              </div>
+              {includes.length ? (
+                <p className="text-xs text-muted">
+                  Separados: {formatMoney(separateCents)} e {separateMinutes} min.
+                  {centsFromInput(price) !== null && separateCents > (centsFromInput(price) ?? 0)
+                    ? ` Cliente economiza ${formatMoney(separateCents - (centsFromInput(price) ?? 0))}.`
+                    : ''}
+                </p>
+              ) : null}
+              {errors.includes ? <p className="text-xs text-danger">{errors.includes}</p> : null}
+            </>
+          ) : null}
+        </div>
         <div className="sm:col-span-2">
           <Switch
             id="service-active"
