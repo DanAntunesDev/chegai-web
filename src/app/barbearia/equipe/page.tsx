@@ -47,7 +47,7 @@ export default function TeamPage() {
           {staff.data?.map((member) => (
             <li key={member.id}>
               <Link
-                href={`/painel/equipe/${member.id}`}
+                href={`/barbearia/equipe/${member.id}`}
                 className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 hover:border-brand/40"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-2 font-semibold text-foreground">
@@ -79,7 +79,7 @@ export default function TeamPage() {
           units={units.data}
           open={open}
           onClose={() => setOpen(false)}
-          onSaved={(saved) => router.push(`/painel/equipe/${saved.id}`)}
+          onSaved={(saved) => router.push(`/barbearia/equipe/${saved.id}`)}
         />
       ) : null}
     </>

@@ -7,7 +7,7 @@ export type Target =
   { kind: 'app' } | { kind: 'slug'; slug: string } | { kind: 'domain'; host: string };
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const RESERVED = new Set(['www', 'app', 'api', 'admin', 'painel', 'static']);
+const RESERVED = new Set(['www', 'app', 'api', 'admin', 'painel', 'barbearia', 'static']);
 
 export function normalizeHost(raw: string | null | undefined): string {
   return (raw ?? '').split(',')[0]!.trim().toLowerCase().replace(/:\d+$/, '').replace(/\.$/, '');

@@ -16,7 +16,7 @@ interface CurrentTenant {
   displayName: string;
 }
 
-const ALWAYS_OPEN = ['/painel/assinatura', '/painel/seguranca'];
+const ALWAYS_OPEN = ['/barbearia/assinatura', '/barbearia/seguranca'];
 
 export function useCurrentTenant() {
   return useQuery({
@@ -46,7 +46,7 @@ export function TenantStatusGate({ children }: { children: ReactNode }) {
           Há uma fatura em atraso. A agenda online continua guardada e volta a funcionar assim que o
           pagamento for confirmado.
         </p>
-        <Link href="/painel/assinatura" className={buttonVariants({ size: 'lg' })}>
+        <Link href="/barbearia/assinatura" className={buttonVariants({ size: 'lg' })}>
           Pagar agora com Pix
         </Link>
       </div>
@@ -64,7 +64,7 @@ export function TenantStatusGate({ children }: { children: ReactNode }) {
           <span className="flex-1">
             Sua fatura está em atraso. Pague para evitar a suspensão do acesso.
           </span>
-          <Link href="/painel/assinatura" className="font-semibold text-foreground underline">
+          <Link href="/barbearia/assinatura" className="font-semibold text-foreground underline">
             Pagar
           </Link>
         </div>

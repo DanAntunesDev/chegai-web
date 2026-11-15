@@ -9,9 +9,16 @@ export function safeNext(value: string | null | undefined): string | null {
 
 export function homeFor(session: Session): string {
   if (session.tenant) {
-    return '/painel';
+    return '/barbearia';
   }
   return session.user.isPlatformAdmin ? '/admin' : '/sem-acesso';
+}
+
+export type LoginAudience = 'admin' | 'barbearia';
+
+export function loginPathFor(pathname: string): string {
+  const audience: LoginAudience = pathname.startsWith('/admin') ? 'admin' : 'barbearia';
+  return `/login/${audience}?next=${encodeURIComponent(pathname)}`;
 }
 
 export function destinationAfterLogin(session: Session, next: string | null | undefined): string {
@@ -19,7 +26,7 @@ export function destinationAfterLogin(session: Session, next: string | null | un
   if (target?.startsWith('/admin') && !session.user.isPlatformAdmin) {
     return homeFor(session);
   }
-  if (target?.startsWith('/painel') && !session.tenant) {
+  if (target?.startsWith('/barbearia') && !session.tenant) {
     return homeFor(session);
   }
   return target ?? homeFor(session);

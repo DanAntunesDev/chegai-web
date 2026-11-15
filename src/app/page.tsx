@@ -12,7 +12,7 @@ export default function Home() {
 
   useEffect(() => {
     if (status === 'anonymous') {
-      router.replace('/login');
+      router.replace('/login/barbearia');
     } else if (session) {
       router.replace(homeFor(session));
     }

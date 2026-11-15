@@ -39,7 +39,7 @@ export default function StaffPage() {
   return (
     <>
       <Link
-        href="/painel/equipe"
+        href="/barbearia/equipe"
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> Equipe
@@ -72,7 +72,7 @@ export default function StaffPage() {
                   confirmLabel="Remover"
                   onConfirm={async () => {
                     await remove.mutateAsync(staff.data.id);
-                    router.replace('/painel/equipe');
+                    router.replace('/barbearia/equipe');
                   }}
                 />
               </>

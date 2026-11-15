@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { ApiError, describeError } from '@/lib/api/errors';
-import { destinationAfterLogin } from '@/lib/auth/redirect';
+import { destinationAfterLogin, type LoginAudience } from '@/lib/auth/redirect';
 
 const credentialsSchema = z.object({
   email: z.email('Digite um e-mail válido.'),
@@ -21,8 +21,13 @@ const codeSchema = z.string().regex(/^\d{6}$/, 'O código tem 6 números.');
 
 type Step = 'credentials' | 'totp';
 
-export function LoginForm() {
-  const { login, status, session } = useAuth();
+const COPY: Record<LoginAudience, { title: string; subtitle: string }> = {
+  admin: { title: 'Administração', subtitle: 'Acesso restrito à equipe do Chegaí.' },
+  barbearia: { title: 'Entrar', subtitle: 'Acesse o painel da sua barbearia.' },
+};
+
+export function LoginForm({ audience }: { audience: LoginAudience }) {
+  const { login, logout, status, session } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get('next');
@@ -37,10 +42,17 @@ export function LoginForm() {
   const codeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (status === 'authenticated' && session) {
-      router.replace(destinationAfterLogin(session, next));
+    if (status !== 'authenticated' || !session) {
+      return;
     }
-  }, [status, session, next, router]);
+    if (audience === 'admin' && !session.user.isPlatformAdmin) {
+      void logout().then(() => setFailure('Essa conta não tem acesso à administração.'));
+      return;
+    }
+    router.replace(
+      destinationAfterLogin(session, next ?? (audience === 'admin' ? '/admin' : null)),
+    );
+  }, [status, session, next, router, audience, logout]);
 
   useEffect(() => {
     if (step === 'totp') {
@@ -93,8 +105,8 @@ export function LoginForm() {
       {step === 'credentials' ? (
         <>
           <div>
-            <h2 className="text-2xl font-semibold">Entrar</h2>
-            <p className="mt-1 text-sm text-muted">Acesse o painel da sua barbearia.</p>
+            <h2 className="text-2xl font-semibold">{COPY[audience].title}</h2>
+            <p className="mt-1 text-sm text-muted">{COPY[audience].subtitle}</p>
           </div>
           <Field label="E-mail" htmlFor="email" error={errors.email} required>
             <Input

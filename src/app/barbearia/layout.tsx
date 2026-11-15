@@ -54,7 +54,7 @@ function PanelShell({ children }: { children: ReactNode }) {
   return (
     <AppShell
       nav={navFor(me.data?.permissions, session?.user.isPlatformAdmin ?? false)}
-      moreHref="/painel/mais"
+      moreHref="/barbearia/mais"
       area="Barbearia"
       headerExtra={<TenantSwitcher />}
     >

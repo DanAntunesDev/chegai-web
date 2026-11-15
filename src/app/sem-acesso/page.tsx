@@ -20,7 +20,7 @@ export default function NoAccessPage() {
         variant="outline"
         onClick={async () => {
           await logout();
-          router.replace('/login');
+          router.replace('/login/barbearia');
         }}
       >
         Sair

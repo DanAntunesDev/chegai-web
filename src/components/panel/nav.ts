@@ -29,7 +29,7 @@ interface PanelNavItem {
 
 export const PANEL_NAV: PanelNavItem[] = [
   {
-    href: '/painel',
+    href: '/barbearia',
     label: 'Visão geral',
     icon: LayoutDashboard,
     exact: true,
@@ -37,7 +37,7 @@ export const PANEL_NAV: PanelNavItem[] = [
     permission: 'analytics.view',
   },
   {
-    href: '/painel/agenda',
+    href: '/barbearia/agenda',
     label: 'Agenda',
     icon: CalendarDays,
     mobile: true,
@@ -48,25 +48,25 @@ export const PANEL_NAV: PanelNavItem[] = [
     icon: ClipboardList,
     children: [
       {
-        href: '/painel/clientes',
+        href: '/barbearia/clientes',
         label: 'Clientes',
         permission: 'customers.view',
         description: 'Contatos, aniversários e observações',
       },
       {
-        href: '/painel/equipe',
+        href: '/barbearia/equipe',
         label: 'Equipe',
         permission: 'staff.manage',
         description: 'Barbeiros, expediente e folgas',
       },
       {
-        href: '/painel/servicos',
+        href: '/barbearia/servicos',
         label: 'Serviços e combos',
         permission: 'services.manage',
         description: 'Preços, duração, categorias e combos',
       },
       {
-        href: '/painel/unidades',
+        href: '/barbearia/unidades',
         label: 'Unidades',
         permission: 'units.manage',
         description: 'Endereços e regras de agendamento',
@@ -78,13 +78,13 @@ export const PANEL_NAV: PanelNavItem[] = [
     icon: Wallet,
     children: [
       {
-        href: '/painel/pagamentos',
+        href: '/barbearia/pagamentos',
         label: 'Pagamentos',
         permission: 'tenant.settings.manage',
         description: 'Sinal e links de cobrança',
       },
       {
-        href: '/painel/assinatura',
+        href: '/barbearia/assinatura',
         label: 'Assinatura',
         permission: 'billing.view',
         description: 'Faturas do Chegaí',
@@ -92,7 +92,7 @@ export const PANEL_NAV: PanelNavItem[] = [
     ],
   },
   {
-    href: '/painel/seguranca',
+    href: '/barbearia/seguranca',
     label: 'Segurança',
     icon: ShieldCheck,
     adminOnly: true,

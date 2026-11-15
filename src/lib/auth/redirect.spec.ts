@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Session } from '../api/types';
-import { destinationAfterLogin, homeFor, safeNext } from './redirect';
+import { destinationAfterLogin, homeFor, loginPathFor, safeNext } from './redirect';
 
 const session = (overrides: Partial<Session> = {}): Session => ({
   accessToken: 't',
@@ -21,7 +21,7 @@ describe('login redirects', () => {
   });
 
   it('sends people to their own area', () => {
-    expect(homeFor(session())).toBe('/painel');
+    expect(homeFor(session())).toBe('/barbearia');
     expect(
       homeFor(session({ tenant: null, user: { ...session().user, isPlatformAdmin: true } })),
     ).toBe('/admin');
@@ -29,7 +29,14 @@ describe('login redirects', () => {
   });
 
   it('ignores areas the account cannot open', () => {
-    expect(destinationAfterLogin(session(), '/admin/tenants')).toBe('/painel');
-    expect(destinationAfterLogin(session(), '/painel/agenda')).toBe('/painel/agenda');
+    expect(destinationAfterLogin(session(), '/admin/tenants')).toBe('/barbearia');
+    expect(destinationAfterLogin(session(), '/barbearia/agenda')).toBe('/barbearia/agenda');
+  });
+});
+
+describe('login path', () => {
+  it('sends each area to its own login', () => {
+    expect(loginPathFor('/admin/integracoes')).toBe('/login/admin?next=%2Fadmin%2Fintegracoes');
+    expect(loginPathFor('/barbearia/agenda')).toBe('/login/barbearia?next=%2Fbarbearia%2Fagenda');
   });
 });

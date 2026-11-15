@@ -263,7 +263,9 @@ function UserMenu() {
           role="menuitem"
           onClick={async () => {
             await logout();
-            router.replace('/login');
+            router.replace(
+              window.location.pathname.startsWith('/admin') ? '/login/admin' : '/login/barbearia',
+            );
           }}
           className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-danger hover:bg-surface-2"
         >

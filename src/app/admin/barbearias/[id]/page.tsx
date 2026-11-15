@@ -76,7 +76,7 @@ export default function TenantPage() {
                     setOpening(true);
                     try {
                       await switchTenant(tenant.data.slug);
-                      router.push('/painel');
+                      router.push('/barbearia');
                     } finally {
                       setOpening(false);
                     }

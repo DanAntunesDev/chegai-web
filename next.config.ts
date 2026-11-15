@@ -38,6 +38,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   allowedDevOrigins: devOrigins,
   reactStrictMode: true,
+  async redirects() {
+    return [
+      { source: '/painel', destination: '/barbearia', permanent: false },
+      { source: '/painel/:path*', destination: '/barbearia/:path*', permanent: false },
+    ];
+  },
   async rewrites() {
     return [{ source: '/v1/:path*', destination: `${apiUrl}/v1/:path*` }];
   },

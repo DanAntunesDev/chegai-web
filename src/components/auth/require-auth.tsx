@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect } from 'react';
 import type { Session } from '@/lib/api/types';
+import { loginPathFor } from '@/lib/auth/redirect';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from './auth-provider';
 
@@ -20,7 +21,7 @@ export function RequireAuth({ children, allow, fallback }: RequireAuthProps) {
 
   useEffect(() => {
     if (status === 'anonymous') {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      router.replace(loginPathFor(pathname));
     } else if (status === 'authenticated' && !permitted) {
       router.replace(fallback);
     }
