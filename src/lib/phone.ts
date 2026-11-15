@@ -16,14 +16,3 @@ export function formatPhone(value: string | null | undefined): string {
 export function whatsappLink(value: string): string {
   return `https://wa.me/${value.replace(/\D/g, '')}`;
 }
-
-export function parseTags(value: string): string[] {
-  const seen = new Set<string>();
-  for (const raw of value.split(',')) {
-    const tag = raw.trim().toLowerCase();
-    if (tag && tag.length <= 30) {
-      seen.add(tag);
-    }
-  }
-  return [...seen].slice(0, 20);
-}

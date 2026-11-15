@@ -1,6 +1,7 @@
 'use client';
 
 import { type FormEvent, useState } from 'react';
+import { TagPicker } from '@/components/tags/tag-picker';
 import { z } from 'zod';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ export function StaffDialog({
     staff?.units.map((unit) => unit.unitId) ??
       (units.length === 1 && units[0] ? [units[0].id] : []),
   );
+  const [tagIds, setTagIds] = useState<string[]>(staff?.tags.map((tag) => tag.id) ?? []);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -72,6 +74,7 @@ export function StaffDialog({
           phone: phone.trim() || null,
           email: email.trim() || null,
           unitIds,
+          tagIds,
           isActive: active,
         }
       : {
@@ -81,6 +84,7 @@ export function StaffDialog({
           phone: phone.trim() || undefined,
           email: email.trim() || undefined,
           unitIds,
+          tagIds,
         };
     save.mutate(
       { id: staff?.id, body },
@@ -185,6 +189,9 @@ export function StaffDialog({
           ))}
           {errors.unitIds ? <p className="text-xs text-danger">{errors.unitIds}</p> : null}
         </fieldset>
+        <div className="sm:col-span-2">
+          <TagPicker value={tagIds} onChange={setTagIds} target="STAFF" />
+        </div>
         {staff ? (
           <div className="sm:col-span-2">
             <Switch

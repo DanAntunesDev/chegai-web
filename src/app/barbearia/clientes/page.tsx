@@ -1,12 +1,14 @@
 'use client';
 
 import { Cake, MessageCircle, Plus, Search, UserRound } from 'lucide-react';
-import { useDeferredValue, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useDeferredValue, useState } from 'react';
 import { useMe } from '@/components/auth/use-me';
 import { CustomerDialog } from '@/components/panel/customer-dialog';
 import { PageHeader } from '@/components/shell/app-shell';
+import { TagChip } from '@/components/tags/tag-chip';
+import { TagFilter } from '@/components/tags/tag-filter';
 import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmButton } from '@/components/ui/confirm-button';
@@ -20,10 +22,19 @@ import type { Customer } from '@/lib/panel/types';
 import { formatPhone, whatsappLink } from '@/lib/phone';
 
 export default function CustomersPage() {
+  return (
+    <Suspense>
+      <Customers />
+    </Suspense>
+  );
+}
+
+function Customers() {
+  const params = useSearchParams();
   const me = useMe();
   const canManage = me.data?.permissions.includes('customers.manage') ?? false;
   const [search, setSearch] = useState('');
-  const [tag, setTag] = useState('');
+  const [tag, setTag] = useState(params.get('tag') ?? '');
   const [page, setPage] = useState(1);
   const deferred = useDeferredValue(search.trim());
   const customers = useCustomers(deferred, tag, page);
@@ -71,11 +82,14 @@ export default function CustomersPage() {
             className="pl-9"
           />
         </div>
-        {tag ? (
-          <Button variant="outline" onClick={() => setTag('')}>
-            Etiqueta: {tag} ✕
-          </Button>
-        ) : null}
+        <TagFilter
+          value={tag}
+          target="CUSTOMERS"
+          onChange={(value) => {
+            setTag(value);
+            setPage(1);
+          }}
+        />
       </div>
 
       {customers.error ? <Alert>{describeError(customers.error)}</Alert> : null}
@@ -113,14 +127,15 @@ export default function CustomersPage() {
               <div className="flex flex-wrap gap-1">
                 {customer.tags.map((item) => (
                   <button
-                    key={item}
+                    key={item.id}
                     type="button"
+                    aria-label={`Filtrar pela tag ${item.name}`}
                     onClick={() => {
-                      setTag(item);
+                      setTag(item.id);
                       setPage(1);
                     }}
                   >
-                    <Badge tone="info">{item}</Badge>
+                    <TagChip tag={item} />
                   </button>
                 ))}
               </div>

@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { describeError, serverFieldErrors } from '@/lib/api/errors';
 import { useSaveCustomer } from '@/lib/panel/queries';
 import type { Customer } from '@/lib/panel/types';
-import { formatPhone, parseTags } from '@/lib/phone';
+import { formatPhone } from '@/lib/phone';
+import { TagPicker } from '@/components/tags/tag-picker';
 
 export function CustomerDialog({
   customer,
@@ -28,7 +29,7 @@ export function CustomerDialog({
   const [phone, setPhone] = useState(formatPhone(customer?.phone));
   const [email, setEmail] = useState(customer?.email ?? '');
   const [birthDate, setBirthDate] = useState(customer?.birthDate?.slice(0, 10) ?? '');
-  const [tags, setTags] = useState(customer?.tags.join(', ') ?? '');
+  const [tagIds, setTagIds] = useState<string[]>(customer?.tags.map((tag) => tag.id) ?? []);
   const [notes, setNotes] = useState(customer?.notes ?? '');
   const [optIn, setOptIn] = useState(customer?.marketingOptIn ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -57,7 +58,7 @@ export function CustomerDialog({
           phone,
           email: email.trim() || null,
           birthDate: birthDate || null,
-          tags: parseTags(tags),
+          tagIds,
           notes: notes.trim() || null,
           marketingOptIn: optIn,
         },
@@ -124,17 +125,9 @@ export function CustomerDialog({
             onChange={(event) => setBirthDate(event.target.value)}
           />
         </Field>
-        <Field
-          label="Etiquetas"
-          htmlFor="customer-tags"
-          hint="Separe por vírgula. Ex.: vip, mensal"
-        >
-          <Input
-            id="customer-tags"
-            value={tags}
-            onChange={(event) => setTags(event.target.value)}
-          />
-        </Field>
+        <div className="sm:col-span-2">
+          <TagPicker value={tagIds} onChange={setTagIds} target="CUSTOMERS" />
+        </div>
         <Field label="Observações" htmlFor="customer-notes" className="sm:col-span-2">
           <Textarea
             id="customer-notes"

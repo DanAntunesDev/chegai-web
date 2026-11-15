@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhone, parseTags, whatsappLink } from './phone';
+import { formatPhone, whatsappLink } from './phone';
 
 describe('phone helpers', () => {
   it('formats brazilian numbers', () => {
@@ -10,9 +10,5 @@ describe('phone helpers', () => {
 
   it('builds whatsapp links', () => {
     expect(whatsappLink('+55 38 99111-0001')).toBe('https://wa.me/5538991110001');
-  });
-
-  it('parses tags', () => {
-    expect(parseTags(' VIP, barba,vip, ,mensal')).toEqual(['vip', 'barba', 'mensal']);
   });
 });
