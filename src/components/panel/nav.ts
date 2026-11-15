@@ -66,6 +66,12 @@ export const PANEL_NAV: PanelNavItem[] = [
         description: 'Preços, duração, categorias e combos',
       },
       {
+        href: '/barbearia/tags',
+        label: 'Tags',
+        permission: 'customers.view',
+        description: 'Etiquetas com cor para clientes e equipe',
+      },
+      {
         href: '/barbearia/unidades',
         label: 'Unidades',
         permission: 'units.manage',

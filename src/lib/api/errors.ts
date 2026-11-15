@@ -53,6 +53,8 @@ const MESSAGES: Record<string, string> = {
   PAYMENT_KEY_REJECTED: 'O Asaas não aceitou essa chave de API.',
   INVALID_WEBHOOK_URL: 'Use uma URL https pública para o webhook.',
   WEBHOOK_NOT_FOUND: 'Webhook não encontrado.',
+  TAG_NAME_TAKEN: 'Já existe uma tag com esse nome.',
+  TAG_NOT_FOUND: 'Uma das tags não vale para esse cadastro.',
   SLOT_TAKEN: 'Esse horário acabou de ser ocupado. Escolha outro.',
   SLOT_UNAVAILABLE: 'Esse horário não está mais disponível.',
   CHECK_IN_TOO_EARLY: 'Ainda é cedo para registrar a chegada.',

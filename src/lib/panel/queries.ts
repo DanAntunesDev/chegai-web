@@ -20,6 +20,7 @@ import type {
   Service,
   Staff,
   StaffDetail,
+  Tag,
   Unit,
   WorkingInterval,
 } from './types';
@@ -34,6 +35,7 @@ export const panelKeys = {
   services: ['panel', 'services'] as const,
   customers: (search: string, tag: string, page: number) =>
     ['panel', 'customers', search, tag, page] as const,
+  tags: ['panel', 'tags'] as const,
 };
 
 type Body = Record<string, unknown>;
@@ -82,7 +84,7 @@ export function useSaveStaff() {
   return useApiMutation(
     ({ id, body }: { id?: string; body: Body }) =>
       id ? send<Staff>(`/v1/staff/${id}`, 'PATCH', body) : send<Staff>('/v1/staff', 'POST', body),
-    [panelKeys.staff],
+    [panelKeys.staff, panelKeys.tags],
   );
 }
 
@@ -180,10 +182,29 @@ export function useCustomers(search: string, tag: string, page: number) {
     queryKey: panelKeys.customers(search, tag, page),
     queryFn: () =>
       api<Page<Customer>>('/v1/customers', {
-        query: { search: search || undefined, tag: tag || undefined, page, pageSize: 20 },
+        query: { search: search || undefined, tagId: tag || undefined, page, pageSize: 20 },
       }),
     placeholderData: (previous) => previous,
   });
+}
+
+export function useTags() {
+  return useQuery({ queryKey: panelKeys.tags, queryFn: () => api<Tag[]>('/v1/tags') });
+}
+
+export function useSaveTag() {
+  return useApiMutation(
+    ({ id, body }: { id?: string; body: Body }) =>
+      id ? send<Tag>(`/v1/tags/${id}`, 'PATCH', body) : send<Tag>('/v1/tags', 'POST', body),
+    [panelKeys.tags, ['panel', 'customers'], panelKeys.staff],
+  );
+}
+
+export function useDeleteTag() {
+  return useApiMutation(
+    (id: string) => send<void>(`/v1/tags/${id}`, 'DELETE'),
+    [panelKeys.tags, ['panel', 'customers'], panelKeys.staff],
+  );
 }
 
 export function useSaveCustomer() {
@@ -192,7 +213,7 @@ export function useSaveCustomer() {
       id
         ? send<Customer>(`/v1/customers/${id}`, 'PATCH', body)
         : send<Customer>('/v1/customers', 'POST', body),
-    [['panel', 'customers']],
+    [['panel', 'customers'], panelKeys.tags],
   );
 }
 

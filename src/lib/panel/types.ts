@@ -31,6 +31,7 @@ export interface Staff {
   photoUrl: string | null;
   isActive: boolean;
   units: { unitId: string }[];
+  tags: TagRef[];
 }
 
 export interface WorkingInterval {
@@ -80,6 +81,21 @@ export interface Service {
   includes: string[];
 }
 
+export type TagScope = 'ALL' | 'CUSTOMERS' | 'STAFF';
+
+export interface TagRef {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface Tag extends TagRef {
+  note: string | null;
+  scope: TagScope;
+  customersCount: number;
+  staffCount: number;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -87,7 +103,7 @@ export interface Customer {
   email: string | null;
   birthDate: string | null;
   notes: string | null;
-  tags: string[];
+  tags: TagRef[];
   marketingOptIn: boolean;
   createdAt: string;
 }
