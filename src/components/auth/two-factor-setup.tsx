@@ -116,7 +116,7 @@ export function TwoFactorSetup({
               </Button>
             </div>
           </div>
-          <Field label="Código do aplicativo" htmlFor="totp">
+          <Field label="Código do aplicativo" htmlFor="totp" required>
             <Input
               id="totp"
               inputMode="numeric"

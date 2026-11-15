@@ -111,7 +111,7 @@ export function StaffDialog({
       }
     >
       <form id="staff-form" onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nome" htmlFor="staff-name" error={errors.name}>
+        <Field label="Nome" htmlFor="staff-name" error={errors.name} required>
           <Input
             id="staff-name"
             value={name}
@@ -127,7 +127,7 @@ export function StaffDialog({
             onChange={(event) => setNickname(event.target.value)}
           />
         </Field>
-        <Field label="Função" htmlFor="staff-kind">
+        <Field label="Função" htmlFor="staff-kind" required>
           <Select
             id="staff-kind"
             value={kind}
@@ -160,7 +160,12 @@ export function StaffDialog({
           />
         </Field>
         <fieldset className="flex flex-col gap-2 sm:col-span-2">
-          <legend className="mb-1.5 text-sm font-medium">Unidades onde atende</legend>
+          <legend className="mb-1.5 text-sm font-medium">
+            Unidades onde atende
+            <span className="ml-0.5 text-danger" aria-hidden>
+              *
+            </span>
+          </legend>
           {units.map((unit) => (
             <label key={unit.id} className="flex items-center gap-2 text-sm">
               <input

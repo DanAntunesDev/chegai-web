@@ -29,13 +29,13 @@ const schema = z.object({
 
 type Values = z.input<typeof schema>;
 
-const FIELDS: { key: keyof Values; label: string; type?: string }[] = [
-  { key: 'displayName', label: 'Nome para clientes' },
-  { key: 'legalName', label: 'Razão social' },
+const FIELDS: { key: keyof Values; label: string; type?: string; required?: boolean }[] = [
+  { required: true, key: 'displayName', label: 'Nome para clientes' },
+  { required: true, key: 'legalName', label: 'Razão social' },
   { key: 'document', label: 'CPF ou CNPJ' },
-  { key: 'email', label: 'E-mail', type: 'email' },
+  { required: true, key: 'email', label: 'E-mail', type: 'email' },
   { key: 'phone', label: 'Telefone', type: 'tel' },
-  { key: 'timezone', label: 'Fuso horário' },
+  { required: true, key: 'timezone', label: 'Fuso horário' },
 ];
 
 export function TenantDetailsForm({ tenant }: { tenant: AdminTenant }) {
@@ -65,7 +65,13 @@ export function TenantDetailsForm({ tenant }: { tenant: AdminTenant }) {
     <Card>
       <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
         {FIELDS.map((field) => (
-          <Field key={field.key} label={field.label} htmlFor={field.key} error={errors[field.key]}>
+          <Field
+            key={field.key}
+            label={field.label}
+            htmlFor={field.key}
+            error={errors[field.key]}
+            required={field.required}
+          >
             <Input
               id={field.key}
               type={field.type ?? 'text'}

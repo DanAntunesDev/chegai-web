@@ -83,7 +83,13 @@ export function CustomerDialog({
       }
     >
       <form id="customer-form" onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nome" htmlFor="customer-name" error={errors.name} className="sm:col-span-2">
+        <Field
+          label="Nome"
+          htmlFor="customer-name"
+          error={errors.name}
+          className="sm:col-span-2"
+          required
+        >
           <Input
             id="customer-name"
             value={name}
@@ -91,7 +97,7 @@ export function CustomerDialog({
             onChange={(event) => setName(event.target.value)}
           />
         </Field>
-        <Field label="WhatsApp" htmlFor="customer-phone" error={errors.phone}>
+        <Field label="WhatsApp" htmlFor="customer-phone" error={errors.phone} required>
           <Input
             id="customer-phone"
             type="tel"

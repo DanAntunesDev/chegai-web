@@ -89,14 +89,14 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+    <form method="post" onSubmit={submit} noValidate className="flex flex-col gap-5">
       {step === 'credentials' ? (
         <>
           <div>
-            <h2 className="text-2xl font-bold">Entrar</h2>
+            <h2 className="text-2xl font-semibold">Entrar</h2>
             <p className="mt-1 text-sm text-muted">Acesse o painel da sua barbearia.</p>
           </div>
-          <Field label="E-mail" htmlFor="email" error={errors.email}>
+          <Field label="E-mail" htmlFor="email" error={errors.email} required>
             <Input
               id="email"
               type="email"
@@ -109,7 +109,7 @@ export function LoginForm() {
               autoFocus
             />
           </Field>
-          <Field label="Senha" htmlFor="password" error={errors.password}>
+          <Field label="Senha" htmlFor="password" error={errors.password} required>
             <Input
               id="password"
               type="password"
@@ -138,12 +138,12 @@ export function LoginForm() {
             <span className="mb-3 grid size-11 place-items-center rounded-xl bg-brand/10 text-brand">
               <ShieldCheck className="size-5" />
             </span>
-            <h2 className="text-2xl font-bold">Verificação em duas etapas</h2>
+            <h2 className="text-2xl font-semibold">Verificação em duas etapas</h2>
             <p className="mt-1 text-sm text-muted">
               Abra seu app autenticador e digite o código de 6 números.
             </p>
           </div>
-          <Field label="Código" htmlFor="code" error={errors.code}>
+          <Field label="Código" htmlFor="code" error={errors.code} required>
             <Input
               ref={codeRef}
               id="code"

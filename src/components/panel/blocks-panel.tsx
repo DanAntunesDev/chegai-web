@@ -108,7 +108,7 @@ export function BlocksPanel({ staffId }: { staffId: string }) {
       <Card>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <CardTitle>Marcar ausência</CardTitle>
-          <Field label="Tipo" htmlFor="block-kind">
+          <Field label="Tipo" htmlFor="block-kind" required>
             <Select
               id="block-kind"
               value={kind}
@@ -121,7 +121,7 @@ export function BlocksPanel({ staffId }: { staffId: string }) {
               ))}
             </Select>
           </Field>
-          <Field label="Início" htmlFor="block-start">
+          <Field label="Início" htmlFor="block-start" required>
             <Input
               id="block-start"
               type="datetime-local"
@@ -129,7 +129,7 @@ export function BlocksPanel({ staffId }: { staffId: string }) {
               onChange={(event) => setStartsAt(event.target.value)}
             />
           </Field>
-          <Field label="Fim" htmlFor="block-end">
+          <Field label="Fim" htmlFor="block-end" required>
             <Input
               id="block-end"
               type="datetime-local"

@@ -103,7 +103,7 @@ export default function NewTenantPage() {
           <Link href={`/admin/barbearias/${tenant.id}`} className={buttonVariants()}>
             Abrir barbearia
           </Link>
-          <Link href="/admin" className={buttonVariants({ variant: 'outline' })}>
+          <Link href="/admin/barbearias" className={buttonVariants({ variant: 'outline' })}>
             Voltar para a lista
           </Link>
         </div>
@@ -114,7 +114,7 @@ export default function NewTenantPage() {
   return (
     <>
       <Link
-        href="/admin"
+        href="/admin/barbearias"
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> Barbearias
@@ -131,6 +131,7 @@ export default function NewTenantPage() {
             label="Nome que aparece para os clientes"
             htmlFor="displayName"
             error={errors.displayName}
+            required
           >
             <Input
               {...input('displayName')}
@@ -142,7 +143,7 @@ export default function NewTenantPage() {
               }}
             />
           </Field>
-          <Field label="Razão social" htmlFor="legalName" error={errors.legalName}>
+          <Field label="Razão social" htmlFor="legalName" error={errors.legalName} required>
             <Input {...input('legalName')} />
           </Field>
           <Field
@@ -150,6 +151,7 @@ export default function NewTenantPage() {
             htmlFor="slug"
             error={errors.slug}
             hint={form.slug ? `Página: /b/${form.slug}` : 'Letras minúsculas, números e hífen.'}
+            required
           >
             <Input
               {...input('slug')}
@@ -162,7 +164,7 @@ export default function NewTenantPage() {
           <Field label="CPF ou CNPJ" htmlFor="document" error={errors.document}>
             <Input {...input('document')} inputMode="numeric" />
           </Field>
-          <Field label="E-mail da barbearia" htmlFor="email" error={errors.email}>
+          <Field label="E-mail da barbearia" htmlFor="email" error={errors.email} required>
             <Input {...input('email')} type="email" />
           </Field>
           <Field label="Telefone" htmlFor="phone" error={errors.phone}>
@@ -172,7 +174,7 @@ export default function NewTenantPage() {
 
         <Card className="grid gap-4 sm:grid-cols-3">
           <CardTitle className="sm:col-span-3">Plano</CardTitle>
-          <Field label="Plano" htmlFor="planCode" error={errors.planCode}>
+          <Field label="Plano" htmlFor="planCode" error={errors.planCode} required>
             <Select {...input('planCode')}>
               <option value="">{plans.isPending ? 'Carregando…' : 'Escolha'}</option>
               {plans.data
@@ -184,20 +186,20 @@ export default function NewTenantPage() {
                 ))}
             </Select>
           </Field>
-          <Field label="Situação inicial" htmlFor="status">
+          <Field label="Situação inicial" htmlFor="status" required>
             <Select {...input('status')}>
               <option value="TRIAL">Teste grátis</option>
               <option value="ACTIVE">Ativa</option>
             </Select>
           </Field>
-          <Field label="Dias de teste" htmlFor="trialDays" error={errors.trialDays}>
+          <Field label="Dias de teste" htmlFor="trialDays" error={errors.trialDays} required>
             <Input {...input('trialDays')} type="number" min={0} max={90} />
           </Field>
         </Card>
 
         <Card className="grid gap-4 sm:grid-cols-3">
           <CardTitle className="sm:col-span-3">Primeira unidade</CardTitle>
-          <Field label="Nome" htmlFor="unitName" error={errors.unitName}>
+          <Field label="Nome" htmlFor="unitName" error={errors.unitName} required>
             <Input {...input('unitName')} />
           </Field>
           <Field label="Cidade" htmlFor="unitCity" error={errors.unitCity}>
@@ -210,10 +212,10 @@ export default function NewTenantPage() {
 
         <Card className="grid gap-4 sm:grid-cols-2">
           <CardTitle className="sm:col-span-2">Dono</CardTitle>
-          <Field label="Nome" htmlFor="ownerName" error={errors.ownerName}>
+          <Field label="Nome" htmlFor="ownerName" error={errors.ownerName} required>
             <Input {...input('ownerName')} autoComplete="off" />
           </Field>
-          <Field label="E-mail" htmlFor="ownerEmail" error={errors.ownerEmail}>
+          <Field label="E-mail" htmlFor="ownerEmail" error={errors.ownerEmail} required>
             <Input {...input('ownerEmail')} type="email" autoComplete="off" />
           </Field>
         </Card>
@@ -221,7 +223,7 @@ export default function NewTenantPage() {
         {create.error && !errors.slug ? <Alert>{describeError(create.error)}</Alert> : null}
 
         <div className="flex justify-end gap-2">
-          <Link href="/admin" className={buttonVariants({ variant: 'ghost' })}>
+          <Link href="/admin/barbearias" className={buttonVariants({ variant: 'ghost' })}>
             Cancelar
           </Link>
           <Button type="submit" loading={create.isPending}>

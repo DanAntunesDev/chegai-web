@@ -55,7 +55,7 @@ export function InviteForm({ tenantId }: { tenantId: string }) {
         noValidate
         className="grid gap-4 sm:grid-cols-[1fr_1fr_180px_auto] sm:items-end"
       >
-        <Field label="E-mail" htmlFor="invite-email" error={error ?? undefined}>
+        <Field label="E-mail" htmlFor="invite-email" error={error ?? undefined} required>
           <Input
             id="invite-email"
             type="email"
@@ -66,7 +66,7 @@ export function InviteForm({ tenantId }: { tenantId: string }) {
         <Field label="Nome" htmlFor="invite-name">
           <Input id="invite-name" value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
-        <Field label="Papel" htmlFor="invite-role">
+        <Field label="Papel" htmlFor="invite-role" required>
           <Select
             id="invite-role"
             value={roleKey}

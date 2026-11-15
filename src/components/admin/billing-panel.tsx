@@ -112,6 +112,7 @@ export function BillingPanel({ tenantId }: { tenantId: string }) {
               htmlFor="billingDay"
               error={validDay ? undefined : 'Escolha um dia entre 1 e 28.'}
               className="max-w-40"
+              required
             >
               <Input
                 id="billingDay"
