@@ -2,13 +2,15 @@
 
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/components/auth/auth-provider';
 import { useMe } from '@/components/auth/use-me';
-import { navFor } from '@/components/panel/nav';
+import { moreLinks } from '@/components/panel/nav';
 import { PageHeader } from '@/components/shell/app-shell';
 
 export default function MorePage() {
   const me = useMe();
-  const items = navFor(me.data?.permissions).filter((item) => !item.mobile);
+  const { session } = useAuth();
+  const items = moreLinks(me.data?.permissions, session?.user.isPlatformAdmin ?? false);
 
   return (
     <>
@@ -18,7 +20,7 @@ export default function MorePage() {
           <li key={item.href}>
             <Link
               href={item.href}
-              className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 hover:border-brand/40"
+              className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 hover:bg-surface-2"
             >
               <span className="grid size-10 place-items-center rounded-lg bg-surface-2">
                 <item.icon className="size-5" aria-hidden />

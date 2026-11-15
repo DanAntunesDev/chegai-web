@@ -1,18 +1,30 @@
 import {
-  Building2,
   CalendarDays,
-  CreditCard,
+  ClipboardList,
   LayoutDashboard,
-  Scissors,
+  type LucideIcon,
   ShieldCheck,
-  UserRound,
-  Users,
+  Wallet,
 } from 'lucide-react';
 import type { NavItem } from '@/components/shell/app-shell';
 
-interface PanelNavItem extends NavItem {
+interface PanelChild {
+  href: string;
+  label: string;
   permission?: string;
   description?: string;
+}
+
+interface PanelNavItem {
+  href?: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  mobile?: boolean;
+  permission?: string;
+  description?: string;
+  children?: PanelChild[];
+  adminOnly?: boolean;
 }
 
 export const PANEL_NAV: PanelNavItem[] = [
@@ -32,52 +44,87 @@ export const PANEL_NAV: PanelNavItem[] = [
     description: 'Horários do dia e da semana',
   },
   {
-    href: '/painel/clientes',
-    label: 'Clientes',
-    icon: UserRound,
-    mobile: true,
-    permission: 'customers.view',
-    description: 'Contatos, aniversários e observações',
+    label: 'Cadastros',
+    icon: ClipboardList,
+    children: [
+      {
+        href: '/painel/clientes',
+        label: 'Clientes',
+        permission: 'customers.view',
+        description: 'Contatos, aniversários e observações',
+      },
+      {
+        href: '/painel/equipe',
+        label: 'Equipe',
+        permission: 'staff.manage',
+        description: 'Barbeiros, expediente e folgas',
+      },
+      {
+        href: '/painel/servicos',
+        label: 'Serviços e combos',
+        permission: 'services.manage',
+        description: 'Preços, duração, categorias e combos',
+      },
+      {
+        href: '/painel/unidades',
+        label: 'Unidades',
+        permission: 'units.manage',
+        description: 'Endereços e regras de agendamento',
+      },
+    ],
   },
   {
-    href: '/painel/equipe',
-    label: 'Equipe',
-    icon: Users,
-    permission: 'staff.manage',
-    description: 'Barbeiros, expediente e folgas',
-  },
-  {
-    href: '/painel/servicos',
-    label: 'Serviços',
-    icon: Scissors,
-    permission: 'services.manage',
-    description: 'Preços, duração e categorias',
-  },
-  {
-    href: '/painel/unidades',
-    label: 'Unidades',
-    icon: Building2,
-    permission: 'units.manage',
-    description: 'Endereços e regras de agendamento',
-  },
-  {
-    href: '/painel/assinatura',
-    label: 'Assinatura',
-    icon: CreditCard,
-    permission: 'billing.view',
-    description: 'Faturas do Chegaí',
+    label: 'Financeiro',
+    icon: Wallet,
+    children: [
+      {
+        href: '/painel/assinatura',
+        label: 'Assinatura',
+        permission: 'billing.view',
+        description: 'Faturas do Chegaí',
+      },
+    ],
   },
   {
     href: '/painel/seguranca',
     label: 'Segurança',
     icon: ShieldCheck,
+    adminOnly: true,
     description: 'Verificação em duas etapas',
   },
 ];
 
-export function navFor(permissions: string[] | undefined): PanelNavItem[] {
-  if (!permissions) {
-    return PANEL_NAV;
-  }
-  return PANEL_NAV.filter((item) => !item.permission || permissions.includes(item.permission));
+function allowed(permission: string | undefined, permissions: string[] | undefined) {
+  return !permission || !permissions || permissions.includes(permission);
+}
+
+export function navFor(permissions: string[] | undefined, isPlatformAdmin: boolean): NavItem[] {
+  return PANEL_NAV.filter((item) => (item.adminOnly ? isPlatformAdmin : true))
+    .filter((item) => allowed(item.permission, permissions))
+    .map((item) => ({
+      ...item,
+      children: item.children?.filter((child) => allowed(child.permission, permissions)),
+    }))
+    .filter((item) => !item.children || item.children.length > 0);
+}
+
+export function moreLinks(permissions: string[] | undefined, isPlatformAdmin: boolean) {
+  return navFor(permissions, isPlatformAdmin).flatMap((item) => {
+    if (item.children) {
+      const source = PANEL_NAV.find((entry) => entry.label === item.label);
+      return item.children.map((child) => ({
+        href: child.href,
+        label: child.label,
+        icon: item.icon,
+        description: source?.children?.find((entry) => entry.href === child.href)?.description,
+      }));
+    }
+    if (item.mobile || !item.href) {
+      return [];
+    }
+    const source = PANEL_NAV.find((entry) => entry.href === item.href);
+    return [
+      { href: item.href, label: item.label, icon: item.icon, description: source?.description },
+    ];
+  });
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { RequireAuth } from '@/components/auth/require-auth';
@@ -14,10 +16,21 @@ function TenantSwitcher() {
   if (!session?.tenant) {
     return null;
   }
-  if (session.tenants.length < 2) {
+  if (session.user.isPlatformAdmin) {
     return (
-      <span className="truncate font-display font-semibold">{session.tenant.displayName}</span>
+      <div className="flex min-w-0 items-center gap-3">
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" aria-hidden /> Admin
+        </Link>
+        <span className="truncate text-sm font-semibold">{session.tenant.displayName}</span>
+      </div>
     );
+  }
+  if (session.tenants.length < 2) {
+    return <span className="truncate text-sm font-semibold">{session.tenant.displayName}</span>;
   }
   return (
     <Select
@@ -37,9 +50,10 @@ function TenantSwitcher() {
 
 function PanelShell({ children }: { children: ReactNode }) {
   const me = useMe();
+  const { session } = useAuth();
   return (
     <AppShell
-      nav={navFor(me.data?.permissions)}
+      nav={navFor(me.data?.permissions, session?.user.isPlatformAdmin ?? false)}
       moreHref="/painel/mais"
       area="Barbearia"
       headerExtra={<TenantSwitcher />}
