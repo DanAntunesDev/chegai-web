@@ -2,7 +2,14 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { TtlCache } from './lib/tenancy/domain-cache';
 import { isValidSlug, parseConfig, publicPath, resolveTarget } from './lib/tenancy/resolve';
 
-const tenancy = parseConfig(process.env.APP_HOSTS, process.env.APP_BASE_DOMAIN);
+const devHosts =
+  process.env.NODE_ENV === 'production'
+    ? ''
+    : (process.env.DEV_ALLOWED_ORIGINS ?? '*.devtunnels.ms,*.trycloudflare.com,*.ngrok-free.app');
+const tenancy = parseConfig(
+  [process.env.APP_HOSTS ?? 'localhost,127.0.0.1', devHosts].filter(Boolean).join(','),
+  process.env.APP_BASE_DOMAIN,
+);
 const apiUrl = (process.env.API_URL ?? 'http://localhost:3333').replace(/\/$/, '');
 const domains = new TtlCache<string | null>(5 * 60 * 1000);
 

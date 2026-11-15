@@ -13,6 +13,14 @@ export function normalizeHost(raw: string | null | undefined): string {
   return (raw ?? '').split(',')[0]!.trim().toLowerCase().replace(/:\d+$/, '').replace(/\.$/, '');
 }
 
+export function hostMatches(host: string, pattern: string): boolean {
+  if (pattern.startsWith('*.')) {
+    const suffix = pattern.slice(1);
+    return host.endsWith(suffix) && host.length > suffix.length;
+  }
+  return host === pattern;
+}
+
 export function isValidSlug(value: string): boolean {
   return value.length >= 3 && value.length <= 60 && SLUG.test(value);
 }
@@ -29,7 +37,7 @@ export function parseConfig(appHosts: string | undefined, baseDomain: string | u
 
 export function resolveTarget(rawHost: string, config: TenancyConfig): Target {
   const host = normalizeHost(rawHost);
-  if (!host || config.appHosts.includes(host)) {
+  if (!host || config.appHosts.some((pattern) => hostMatches(host, pattern))) {
     return { kind: 'app' };
   }
   if (config.baseDomain) {

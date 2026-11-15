@@ -34,6 +34,17 @@ describe('resolveTarget', () => {
   });
 });
 
+describe('wildcard app hosts', () => {
+  it('treats dev tunnels as the panel', () => {
+    const tunnels = parseConfig('localhost,*.devtunnels.ms', undefined);
+    expect(resolveTarget('abc-3000.brs.devtunnels.ms', tunnels)).toEqual({ kind: 'app' });
+    expect(resolveTarget('devtunnels.ms', tunnels)).toEqual({
+      kind: 'domain',
+      host: 'devtunnels.ms',
+    });
+  });
+});
+
 describe('publicPath', () => {
   it('prefixes paths once', () => {
     expect(publicPath('ze', '/')).toBe('/b/ze');

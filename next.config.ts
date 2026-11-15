@@ -9,7 +9,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: https:${isDev ? ' http:' : ''}`,
   "font-src 'self' data:",
-  `connect-src 'self'${isDev ? ' ws:' : ''}`,
+  `connect-src 'self' https://viacep.com.br${isDev ? ' ws:' : ''}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -27,8 +27,16 @@ const securityHeaders = [
     : [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }]),
 ];
 
+const devOrigins = (
+  process.env.DEV_ALLOWED_ORIGINS ?? '*.devtunnels.ms,*.trycloudflare.com,*.ngrok-free.app'
+)
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  allowedDevOrigins: devOrigins,
   reactStrictMode: true,
   async rewrites() {
     return [{ source: '/v1/:path*', destination: `${apiUrl}/v1/:path*` }];
