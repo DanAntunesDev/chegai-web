@@ -11,6 +11,7 @@ import { describeError, serverFieldErrors } from '@/lib/api/errors';
 import { useSaveUnit } from '@/lib/panel/queries';
 import type { Unit } from '@/lib/panel/types';
 import { formatPhone } from '@/lib/phone';
+import { cepDigits, lookupCep, maskCep } from '@/lib/cep';
 import { slugify } from '@/lib/slug';
 
 interface UnitDialogProps {
@@ -112,7 +113,31 @@ export function UnitDialog({ unit, open, onClose }: UnitDialogProps) {
   const save = useSaveUnit();
   const [text, setText] = useState<Text>(() => initialText(unit));
   const [rules, setRules] = useState<Rules>(() => initialRules(unit));
-  const [slugTouched, setSlugTouched] = useState(Boolean(unit));
+  const [cepState, setCepState] = useState<'idle' | 'loading' | 'missing'>('idle');
+
+  const fillFromCep = async (value: string) => {
+    if (cepDigits(value).length !== 8) {
+      return;
+    }
+    setCepState('loading');
+    try {
+      const address = await lookupCep(value);
+      if (!address) {
+        setCepState('missing');
+        return;
+      }
+      setText((current) => ({
+        ...current,
+        street: address.street || current.street,
+        district: address.district || current.district,
+        city: address.city || current.city,
+        state: address.state || current.state,
+      }));
+      setCepState('idle');
+    } catch {
+      setCepState('missing');
+    }
+  };
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const set = (key: keyof Text, value: string) =>
@@ -124,7 +149,8 @@ export function UnitDialog({ unit, open, onClose }: UnitDialogProps) {
     if (text.name.trim().length < 2) {
       local.name = 'Informe o nome.';
     }
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(text.slug)) {
+    const slug = text.slug.trim() || slugify(text.name);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
       local.slug = 'Use letras minúsculas, números e hífen.';
     }
     if (text.state && !/^[A-Za-z]{2}$/.test(text.state)) {
@@ -150,7 +176,7 @@ export function UnitDialog({ unit, open, onClose }: UnitDialogProps) {
         id: unit?.id,
         body: {
           name: text.name.trim(),
-          slug: text.slug,
+          slug,
           phone: orNull(text.phone),
           zipCode: orNull(text.zipCode),
           street: orNull(text.street),
@@ -201,32 +227,56 @@ export function UnitDialog({ unit, open, onClose }: UnitDialogProps) {
     >
       <form id="unit-form" onSubmit={submit} noValidate className="flex flex-col gap-6">
         <section className="grid gap-4 sm:grid-cols-2">
-          <Field label="Nome" htmlFor="unit-name" error={errors.name}>
+          <Field label="Nome" htmlFor="unit-name" error={errors.name} required>
             <Input
               id="unit-name"
               value={text.name}
               aria-invalid={Boolean(errors.name)}
+              onChange={(event) => set('name', event.target.value)}
+            />
+          </Field>
+          <Field
+            label="Identificador no link"
+            htmlFor="unit-slug"
+            error={errors.slug}
+            hint="Opcional. Em branco, usamos o nome da unidade."
+          >
+            <Input
+              id="unit-slug"
+              value={text.slug}
+              placeholder={slugify(text.name) || 'centro'}
+              aria-invalid={Boolean(errors.slug)}
+              onChange={(event) => set('slug', event.target.value.toLowerCase())}
+            />
+          </Field>
+          {field('phone', 'Telefone', { type: 'tel', placeholder: '(38) 99999-9999' })}
+          <Field
+            label="CEP"
+            htmlFor="unit-zipCode"
+            error={errors.zipCode}
+            hint={
+              cepState === 'loading'
+                ? 'Buscando endereço…'
+                : cepState === 'missing'
+                  ? 'CEP não encontrado. Preencha o endereço.'
+                  : 'Preenche rua, bairro, cidade e UF.'
+            }
+          >
+            <Input
+              id="unit-zipCode"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              value={text.zipCode}
+              aria-invalid={Boolean(errors.zipCode)}
               onChange={(event) => {
-                set('name', event.target.value);
-                if (!slugTouched) {
-                  set('slug', slugify(event.target.value));
+                const masked = maskCep(event.target.value);
+                set('zipCode', masked);
+                if (cepDigits(masked).length === 8) {
+                  void fillFromCep(masked);
                 }
               }}
             />
           </Field>
-          <Field label="Endereço curto" htmlFor="unit-slug" error={errors.slug}>
-            <Input
-              id="unit-slug"
-              value={text.slug}
-              aria-invalid={Boolean(errors.slug)}
-              onChange={(event) => {
-                setSlugTouched(true);
-                set('slug', event.target.value.toLowerCase());
-              }}
-            />
-          </Field>
-          {field('phone', 'Telefone', { type: 'tel', placeholder: '(38) 99999-9999' })}
-          {field('zipCode', 'CEP', { inputMode: 'numeric' })}
           {field('street', 'Rua')}
           <div className="grid grid-cols-[1fr_2fr] gap-4">
             {field('number', 'Número')}
